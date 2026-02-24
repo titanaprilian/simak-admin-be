@@ -19,7 +19,6 @@ import {
   InvalidFeatureIdError,
   UpdateSystemError,
 } from "./error";
-import { RecordNotFoundError } from "@/libs/exceptions";
 
 const FEATURE_NAME = "RBAC_management";
 
@@ -327,16 +326,6 @@ const protectedRbac = createProtectedApp()
 export const rbac = createBaseApp({ tags: ["RBAC"] }).group("/rbac", (app) =>
   app
     .onError(({ error, set, locale }) => {
-      if (error instanceof RecordNotFoundError) {
-        return errorResponse(
-          set,
-          404,
-          { key: "common.notFound" },
-          null,
-          locale,
-        );
-      }
-
       if (error instanceof DeleteSystemError) {
         return errorResponse(
           set,
