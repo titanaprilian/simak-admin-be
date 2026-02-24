@@ -213,5 +213,76 @@ export const seedTestRoles = async () => {
   });
 };
 
+export async function createLecturerTestFixture() {
+  const faculty = await prisma.faculty.create({
+    data: { code: "FK", name: "Fakultas Teknik" },
+  });
+
+  const program = await prisma.studyProgram.create({
+    data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+  });
+
+  const role = await prisma.role.create({ data: { name: "LecturerRole" } });
+
+  const user = await prisma.user.create({
+    data: {
+      loginId: "budi-testing",
+      email: "budi@test.com",
+      password: "hashed",
+      roleId: role.id,
+    },
+  });
+
+  const lecturer = await prisma.lecturer.create({
+    data: {
+      userId: user.id,
+      nidn: "001",
+      fullName: "Dr. Budi",
+      gender: "MALE",
+      studyProgramId: program.id,
+    },
+  });
+
+  return { lecturer, program, faculty, user };
+}
+
+export async function createLecturerListTestFixtures(count: number) {
+  const faculty = await prisma.faculty.create({
+    data: { code: "FK", name: "Fakultas Teknik" },
+  });
+
+  const program = await prisma.studyProgram.create({
+    data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+  });
+
+  const role = await prisma.role.create({ data: { name: "LecturerRole" } });
+
+  const lecturers = [];
+  for (let i = 0; i < count; i++) {
+    const user = await prisma.user.create({
+      data: {
+        loginId: `dosen${i}`,
+        email: `dosen${i}@test.com`,
+        password: "hashed",
+        roleId: role.id,
+      },
+    });
+
+    const lecturer = await prisma.lecturer.create({
+      data: {
+        userId: user.id,
+        nidn: `12345${i}`,
+        fullName: `Budi ${i}`,
+        gender: "MALE",
+        studyProgramId: program.id,
+      },
+    });
+
+    lecturers.push(lecturer);
+  }
+
+  return { lecturer: lecturers[0], program, faculty };
+}
+
 // Helper to generate a random IP for each test
 export const randomIp = () => `10.0.0.${Math.floor(Math.random() * 254) + 1}`;

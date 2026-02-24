@@ -1,0 +1,166 @@
+import { LecturerService } from "./service";
+import { LecturerModel } from "./model";
+import {
+  CreateLecturerSchema,
+  UpdateLecturerSchema,
+  LecturerQuerySchema,
+  LecturerParamsSchema,
+} from "./schema";
+import { errorResponse, successResponse } from "@/libs/response";
+import { createBaseApp, createProtectedApp } from "@/libs/base";
+import { hasPermission } from "@/middleware/permission";
+import { LecturerNotFoundError, UserAlreadyHasLecturerError } from "./error";
+
+const FEATURE_NAME = "lecturer_management";
+
+const protectedLecturer = createProtectedApp()
+  .get(
+    "/",
+    async ({ query, set, log, locale }) => {
+      const { lecturers, pagination } = await LecturerService.getAll(
+        query,
+        log,
+      );
+      return successResponse(
+        set,
+        lecturers,
+        { key: "lecturer.listSuccess" },
+        200,
+        { pagination },
+        locale,
+      );
+    },
+    {
+      beforeHandle: hasPermission(FEATURE_NAME, "read"),
+      query: LecturerQuerySchema,
+      response: {
+        200: LecturerModel.list,
+        400: LecturerModel.validationError,
+        500: LecturerModel.error,
+      },
+    },
+  )
+  .get(
+    "/:id",
+    async ({ params, set, log, locale }) => {
+      const lecturer = await LecturerService.getById(params.id, log);
+      return successResponse(
+        set,
+        lecturer,
+        { key: "lecturer.getSuccess" },
+        200,
+        undefined,
+        locale,
+      );
+    },
+    {
+      beforeHandle: hasPermission(FEATURE_NAME, "read"),
+      params: LecturerParamsSchema,
+      response: {
+        200: LecturerModel.get,
+        400: LecturerModel.validationError,
+        500: LecturerModel.error,
+      },
+    },
+  )
+  .post(
+    "/",
+    async ({ body, set, log, locale }) => {
+      const lecturer = await LecturerService.create(body, log);
+      return successResponse(
+        set,
+        lecturer,
+        { key: "lecturer.createSuccess" },
+        201,
+        undefined,
+        locale,
+      );
+    },
+    {
+      beforeHandle: hasPermission(FEATURE_NAME, "create"),
+      body: CreateLecturerSchema,
+      response: {
+        201: LecturerModel.create,
+        400: LecturerModel.validationError,
+        403: LecturerModel.error,
+        500: LecturerModel.error,
+      },
+    },
+  )
+  .patch(
+    "/:id",
+    async ({ params, body, set, log, locale }) => {
+      const lecturer = await LecturerService.update(params.id, body, log);
+      return successResponse(
+        set,
+        lecturer,
+        { key: "lecturer.updateSuccess" },
+        200,
+        undefined,
+        locale,
+      );
+    },
+    {
+      beforeHandle: hasPermission(FEATURE_NAME, "update"),
+      params: LecturerParamsSchema,
+      body: UpdateLecturerSchema,
+      response: {
+        200: LecturerModel.update,
+        400: LecturerModel.validationError,
+        403: LecturerModel.error,
+        500: LecturerModel.error,
+      },
+    },
+  )
+  .delete(
+    "/:id",
+    async ({ params, set, log, locale }) => {
+      await LecturerService.delete(params.id, log);
+      return successResponse(
+        set,
+        null,
+        { key: "lecturer.deleteSuccess" },
+        200,
+        undefined,
+        locale,
+      );
+    },
+    {
+      beforeHandle: hasPermission(FEATURE_NAME, "delete"),
+      params: LecturerParamsSchema,
+      response: {
+        200: LecturerModel.delete,
+        400: LecturerModel.validationError,
+        403: LecturerModel.error,
+        500: LecturerModel.error,
+      },
+    },
+  );
+
+export const lecturer = createBaseApp({ tags: ["Lecturer"] }).group(
+  "/lecturers",
+  (app) =>
+    app
+      .onError(({ error, set, locale }) => {
+        if (error instanceof UserAlreadyHasLecturerError) {
+          return errorResponse(
+            set,
+            400,
+            { key: "lecturer.userAlreadyHasLecturer" },
+            null,
+            locale,
+          );
+        }
+
+        if (error instanceof LecturerNotFoundError) {
+          return errorResponse(
+            set,
+            400,
+            { key: "lecturer.lecturerNotFound" },
+            null,
+            locale,
+          );
+        }
+      })
+      .use(protectedLecturer),
+);
