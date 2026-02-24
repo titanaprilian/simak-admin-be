@@ -156,7 +156,7 @@ describe("DELETE /users/:id", () => {
 
     const targetUser = await prisma.user.create({
       data: {
-        name: "Delete Me",
+        loginId: "Delete Me",
         email: "delete@example.com",
         password: "hashed",
         roleId: role.id,
@@ -192,7 +192,7 @@ describe("DELETE /users/:id", () => {
 
     const targetUser = await prisma.user.create({
       data: {
-        name: "Inactive User",
+        loginId: "Inactive User",
         email: "inactive@example.com",
         password: "hashed",
         roleId: role.id,
@@ -309,7 +309,7 @@ describe("DELETE /users/:id", () => {
 
     const targetUser = await prisma.user.create({
       data: {
-        name: "Concurrent Delete",
+        loginId: "Concurrent Delete",
         email: "concurrent@example.com",
         password: "hashed",
         roleId: role.id,

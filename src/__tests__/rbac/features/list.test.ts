@@ -586,7 +586,7 @@ describe("GET /rbac/features", () => {
     await seedTestFeatures();
 
     const res = await app.handle(
-      new Request("http://localhost/rbac/features?search=order", {
+      new Request("http://localhost/rbac/features?search=user", {
         headers: authHeaders,
       }),
     );
@@ -595,7 +595,7 @@ describe("GET /rbac/features", () => {
 
     expect(res.status).toBe(200);
     expect(body.data.length).toBe(1);
-    expect(body.data[0].name).toBe("order_management");
+    expect(body.data[0].name).toBe("user_management");
   });
 
   it("should return empty array if search does not match any feature", async () => {

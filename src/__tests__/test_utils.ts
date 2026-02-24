@@ -6,7 +6,10 @@ export const TEST_USER_ID = "ckv9x3y9x0001qz1abcde1234";
 // Cleans the DB (Add other tables here)
 export async function resetDatabase() {
   await prisma.refreshToken.deleteMany();
+  await prisma.lecturer.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.studyProgram.deleteMany();
+  await prisma.faculty.deleteMany();
   await prisma.roleFeature.deleteMany();
   await prisma.role.deleteMany();
   await prisma.feature.deleteMany();
@@ -16,7 +19,12 @@ export async function resetDatabase() {
 export async function createTestUser(overrides: any = {}) {
   const plainPassword = overrides.password || "password123";
   const hashedPassword = await Bun.password.hash(plainPassword);
-  const { roleId: overrideRoleId, password: _, ...restOverrides } = overrides;
+  const {
+    roleId: _overrideRoleId,
+    password: _,
+    loginId: overrideLoginId,
+    ...restOverrides
+  } = overrides;
   let roleId = overrides.roleId;
 
   if (!roleId) {
@@ -28,11 +36,18 @@ export async function createTestUser(overrides: any = {}) {
     roleId = defaultRole.id;
   }
 
+  const loginId =
+    overrideLoginId ||
+    (typeof restOverrides.email === "string"
+      ? restOverrides.email.split("@")[0]
+      : undefined) ||
+    `user_${Math.random().toString(36).slice(2, 10)}`;
+
   return await prisma.user.create({
     data: {
       id: "test-user-id",
       email: "test@test.com",
-      name: "John Doe",
+      loginId,
       ...restOverrides,
       password: hashedPassword,
       roleId: roleId,
@@ -147,22 +162,22 @@ export const seedTestUsers = async () => {
   await prisma.user.createMany({
     data: [
       {
-        name: "Alice Johnson",
         email: "alice@example.com",
+        loginId: "alice",
         password: "hashed",
         roleId: roleAdmin.id,
         isActive: true,
       },
       {
-        name: "Bob Smith",
         email: "bob@example.com",
+        loginId: "bob",
         password: "hashed",
         roleId: roleEmployee.id,
         isActive: true,
       },
       {
-        name: "Charlie Disabled",
         email: "charlie@example.com",
+        loginId: "charlie",
         password: "hashed",
         roleId: roleEmployee.id,
         isActive: false,
@@ -178,9 +193,9 @@ export const seedTestFeatures = async () => {
   await prisma.feature.createMany({
     data: [
       { name: "user_management" },
-      { name: "order_management" },
-      { name: "report_management" },
-      { name: "audit_log" },
+      { name: "faculty_management" },
+      { name: "studyProgram_management" },
+      { name: "lecturer_management" },
     ],
   });
 };

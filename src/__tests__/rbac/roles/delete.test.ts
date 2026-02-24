@@ -309,9 +309,9 @@ describe("DELETE /rbac/roles/:id", () => {
 
     await prisma.user.create({
       data: {
+        loginId: "active user",
         email: "active_user@test.com",
         password: "hashedpassword",
-        name: "Active User",
         roleId: roleToCheck.id,
       },
     });

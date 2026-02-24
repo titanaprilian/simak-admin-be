@@ -9,7 +9,6 @@ import {
 import { errorResponse, successResponse } from "@/libs/response";
 import { createBaseApp, createProtectedApp } from "@/libs/base";
 import { hasPermission } from "@/middleware/permission";
-import { Prisma } from "@generated/prisma";
 import { DeleteSystemError } from "../rbac/error";
 import { CreateSystemError, DeleteSelfError, UpdateSystemError } from "./error";
 
@@ -80,6 +79,7 @@ const protectedUser = createProtectedApp()
     "/:id",
     async ({ params, set, log, locale }) => {
       const user = await UserService.getUser(params.id, log);
+
       if (!user) {
         return errorResponse(
           set,
@@ -172,50 +172,6 @@ const protectedUser = createProtectedApp()
 export const user = createBaseApp({ tags: ["User"] }).group("/users", (app) =>
   app
     .onError(({ error, set, locale }) => {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2003"
-      ) {
-        const rawField = (error.meta?.field_name as string) || "unknown";
-        const match = rawField.match(/_([a-zA-Z0-9]+)_fkey/);
-        const fieldName = match ? match[1] : rawField;
-
-        return errorResponse(
-          set,
-          400,
-          { key: "common.badRequest", params: { field: fieldName } },
-          null,
-          locale,
-        );
-      }
-
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
-        const target = (error.meta?.target as string[])?.join(", ") || "field";
-        return errorResponse(
-          set,
-          409,
-          { key: "common.error", params: { field: target } },
-          null,
-          locale,
-        );
-      }
-
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2025"
-      ) {
-        return errorResponse(
-          set,
-          404,
-          { key: "common.notFound" },
-          null,
-          locale,
-        );
-      }
-
       if (error instanceof DeleteSystemError) {
         return errorResponse(
           set,

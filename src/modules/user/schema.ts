@@ -2,8 +2,8 @@ import { PaginationSchema } from "@/libs/response";
 import { z } from "zod";
 
 export const CreateUserSchema = z.object({
-  email: z.email(),
-  name: z.string().min(2).max(50).optional(),
+  email: z.email().optional(),
+  loginId: z.string().min(8),
   password: z.string().min(8),
   roleId: z.string(),
   isActive: z.boolean().default(true),
@@ -12,7 +12,7 @@ export const CreateUserSchema = z.object({
 export const UpdateUserSchema = z
   .object({
     email: z.email().optional(),
-    name: z.string().min(2).max(50).optional(),
+    loginId: z.string().min(8).optional(),
     password: z.string().min(8).optional(),
     roleId: z.string().optional(),
     isActive: z.boolean().optional(),

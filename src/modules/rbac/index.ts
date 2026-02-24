@@ -16,12 +16,10 @@ import { createBaseApp, createProtectedApp } from "@/libs/base";
 import { hasPermission } from "@/middleware/permission";
 import {
   DeleteSystemError,
-  ForeignKeyError,
   InvalidFeatureIdError,
-  RecordNotFoundError,
-  UniqueConstraintError,
   UpdateSystemError,
 } from "./error";
+import { RecordNotFoundError } from "@/libs/exceptions";
 
 const FEATURE_NAME = "RBAC_management";
 
@@ -329,26 +327,6 @@ const protectedRbac = createProtectedApp()
 export const rbac = createBaseApp({ tags: ["RBAC"] }).group("/rbac", (app) =>
   app
     .onError(({ error, set, locale }) => {
-      if (error instanceof ForeignKeyError) {
-        return errorResponse(
-          set,
-          400,
-          { key: error.key, params: { fieldName: error.field } },
-          null,
-          locale,
-        );
-      }
-
-      if (error instanceof UniqueConstraintError) {
-        return errorResponse(
-          set,
-          409,
-          { key: error.key, params: { field: error.field } },
-          null,
-          locale,
-        );
-      }
-
       if (error instanceof RecordNotFoundError) {
         return errorResponse(
           set,

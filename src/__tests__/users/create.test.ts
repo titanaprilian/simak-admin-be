@@ -20,7 +20,7 @@ describe("POST /users", () => {
 
   it("should return 401 if not logged in", async () => {
     const payload = {
-      name: "John Doe",
+      loginId: "John Doe",
       email: "john@example.com",
       password: "Password123!",
       roleId: "role-id",
@@ -48,7 +48,7 @@ describe("POST /users", () => {
     });
 
     const payload = {
-      name: "John Doe",
+      loginId: "John Doe",
       email: "john@example.com",
       password: "Password123!",
       roleId: role.id,
@@ -79,7 +79,7 @@ describe("POST /users", () => {
     });
 
     const payload = {
-      name: "John Doe",
+      loginId: "John Doe",
       email: "john@example.com",
       password: "Password123!",
       roleId: role.id,
@@ -110,7 +110,7 @@ describe("POST /users", () => {
     });
 
     const payload = {
-      name: "John Doe",
+      loginId: "John Doe",
       email: "john@example.com",
       password: "Password123!",
       roleId: role.id,
@@ -137,7 +137,7 @@ describe("POST /users", () => {
 
     await prisma.user.create({
       data: {
-        name: "The Super Admin",
+        loginId: "superAdmin",
         email: "super@admin.com",
         password: "hashed_password",
         roleId: superAdminRole.id,
@@ -154,7 +154,7 @@ describe("POST /users", () => {
         method: "POST",
         headers: { ...authHeaders, "x-forwarded-for": randomIp() },
         body: JSON.stringify({
-          name: "Wannabe SuperAdmin",
+          loginId: "Wannabe SuperAdmin",
           email: "wannabe@example.com",
           password: "Password123!",
           roleId: superAdminRole.id, // This should trigger the error
@@ -182,7 +182,7 @@ describe("POST /users", () => {
     });
 
     const payload = {
-      name: "John Doe",
+      loginId: "John Doe",
       email: "john@example.com",
       password: "Password123!",
       roleId: role.id,
@@ -223,7 +223,7 @@ describe("POST /users", () => {
           "x-forwarded-for": randomIp(),
         },
         body: JSON.stringify({
-          name: "Jane Doe",
+          loginId: "Jane Doe",
           email: "jane@example.com",
           password: "Password123!",
           roleId: role.id,
@@ -236,29 +236,6 @@ describe("POST /users", () => {
     });
 
     expect(user?.isActive).toBe(true);
-  });
-
-  it("should return 201 even if name is missing", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
-      { featureName: "user_management", action: "create" },
-    ]);
-
-    const role = await prisma.role.create({ data: { name: "Employee" } });
-
-    const res = await app.handle(
-      new Request("http://localhost/users", {
-        method: "POST",
-        headers: { ...authHeaders, "x-forwarded-for": randomIp() },
-        body: JSON.stringify({
-          email: "john@example.com",
-          password: "Password123!",
-          roleId: role.id,
-        }),
-      }),
-    );
-
-    expect(res.status).toBe(201);
   });
 
   it("should return 400 if email is invalid", async () => {
@@ -274,7 +251,7 @@ describe("POST /users", () => {
         method: "POST",
         headers: { ...authHeaders, "x-forwarded-for": randomIp() },
         body: JSON.stringify({
-          name: "John",
+          loginId: "John",
           email: "not-an-email",
           password: "Password123!",
           roleId: role.id,
@@ -298,7 +275,7 @@ describe("POST /users", () => {
         method: "POST",
         headers: { ...authHeaders, "x-forwarded-for": randomIp() },
         body: JSON.stringify({
-          name: "John",
+          loginId: "John",
           email: "john@example.com",
           password: "123",
           roleId: role.id,
@@ -320,7 +297,7 @@ describe("POST /users", () => {
         method: "POST",
         headers: { ...authHeaders, "x-forwarded-for": randomIp() },
         body: JSON.stringify({
-          name: "John",
+          loginId: "John",
           email: "john@example.com",
           password: "Password123!",
           roleId: "non-existent-id",
@@ -341,7 +318,7 @@ describe("POST /users", () => {
 
     await prisma.user.create({
       data: {
-        name: "Existing",
+        loginId: "john",
         email: "john@example.com",
         password: "hashed",
         roleId: role.id,
@@ -353,7 +330,7 @@ describe("POST /users", () => {
         method: "POST",
         headers: { ...authHeaders, "x-forwarded-for": randomIp() },
         body: JSON.stringify({
-          name: "John",
+          loginId: "JohnJohn",
           email: "john@example.com",
           password: "Password123!",
           roleId: role.id,
@@ -377,7 +354,7 @@ describe("POST /users", () => {
         method: "POST",
         headers: { ...authHeaders, "x-forwarded-for": randomIp() },
         body: JSON.stringify({
-          name: "Secure User",
+          loginId: "Secure User",
           email: "secure@example.com",
           password: "Password123!",
           roleId: role.id,

@@ -3,7 +3,13 @@ import { loggerMiddleware } from "@/middleware/logger";
 import { authMiddleware } from "@/middleware/auth";
 import { i18nMiddleware } from "@/middleware/i18n";
 import { errorResponse } from "./response";
-import { AccountDisabledError, UnauthorizedError } from "./exceptions";
+import {
+  AccountDisabledError,
+  ForeignKeyError,
+  RecordNotFoundError,
+  UnauthorizedError,
+  UniqueConstraintError,
+} from "./exceptions";
 
 /**
  * BASE APP
@@ -43,6 +49,36 @@ export const createBaseApp = <Prefix extends string = "">(
           400,
           { key: "common.badRequest", params: { field: "validation" } },
           issues,
+          locale,
+        );
+      }
+
+      if (error instanceof ForeignKeyError) {
+        return errorResponse(
+          set,
+          400,
+          { key: error.key, params: { fieldName: error.field } },
+          null,
+          locale,
+        );
+      }
+
+      if (error instanceof UniqueConstraintError) {
+        return errorResponse(
+          set,
+          409,
+          { key: error.key, params: { field: error.field } },
+          null,
+          locale,
+        );
+      }
+
+      if (error instanceof RecordNotFoundError) {
+        return errorResponse(
+          set,
+          404,
+          { key: "common.notFound" },
+          null,
           locale,
         );
       }

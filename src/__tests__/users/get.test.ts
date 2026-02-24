@@ -69,7 +69,7 @@ describe("GET /users/:id", () => {
 
     const targetUser = await prisma.user.create({
       data: {
-        name: "Target User",
+        loginId: "Target User",
         email: "target@example.com",
         password: "hashed",
         roleId: (await prisma.role.create({ data: { name: "Employee" } })).id,
@@ -96,7 +96,7 @@ describe("GET /users/:id", () => {
 
     const targetUser = await prisma.user.create({
       data: {
-        name: "Target User",
+        loginId: "Target User",
         email: "target2@example.com",
         password: "hashed",
         roleId: (await prisma.role.create({ data: { name: "Employee" } })).id,
@@ -123,7 +123,7 @@ describe("GET /users/:id", () => {
 
     const targetUser = await prisma.user.create({
       data: {
-        name: "Target User",
+        loginId: "Target User",
         email: "target3@example.com",
         password: "hashed",
         roleId: (await prisma.role.create({ data: { name: "Employee" } })).id,
@@ -152,7 +152,7 @@ describe("GET /users/:id", () => {
 
     const targetUser = await prisma.user.create({
       data: {
-        name: "Target User",
+        loginId: "Target User",
         email: "target4@example.com",
         password: "hashed",
         roleId: role.id,
@@ -195,7 +195,6 @@ describe("GET /users/:id", () => {
     const body = await res.json();
 
     expect(body.data).toHaveProperty("id");
-    expect(body.data).toHaveProperty("name");
     expect(body.data).toHaveProperty("email");
     expect(body.data).toHaveProperty("roleId");
     expect(body.data).toHaveProperty("isActive");

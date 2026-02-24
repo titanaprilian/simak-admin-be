@@ -67,7 +67,7 @@ describe("PATCH /users/:id", () => {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
-        body: JSON.stringify({ name: "Updated" }),
+        body: JSON.stringify({ loginId: "Updated User" }),
       }),
     );
 
@@ -89,7 +89,7 @@ describe("PATCH /users/:id", () => {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
-        body: JSON.stringify({ name: "Updated" }),
+        body: JSON.stringify({ loginId: "Updated User" }),
       }),
     );
 
@@ -111,7 +111,7 @@ describe("PATCH /users/:id", () => {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
-        body: JSON.stringify({ name: "Updated" }),
+        body: JSON.stringify({ loginId: "Updated User" }),
       }),
     );
 
@@ -125,7 +125,7 @@ describe("PATCH /users/:id", () => {
 
     const targetUser = await prisma.user.create({
       data: {
-        name: "The Boss",
+        loginId: "The Boss",
         email: "boss@admin.com",
         password: "hashed_password",
         roleId: superAdminRole.id,
@@ -155,7 +155,7 @@ describe("PATCH /users/:id", () => {
     expect(body.message).toMatch(/forbidden|superadmin/i);
   });
 
-  it("should update user name successfully", async () => {
+  it("should update user login id successfully", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "user_management", action: "update" },
@@ -170,13 +170,13 @@ describe("PATCH /users/:id", () => {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
-        body: JSON.stringify({ name: "Updated Name" }),
+        body: JSON.stringify({ loginId: "Updated Name" }),
       }),
     );
 
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.data.name).toBe("Updated Name");
+    expect(body.data.loginId).toBe("Updated Name");
   });
 
   it("should update email successfully", async () => {
@@ -290,7 +290,7 @@ describe("PATCH /users/:id", () => {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
-        body: JSON.stringify({ name: "Updated" }),
+        body: JSON.stringify({ loginId: "Updated User" }),
       }),
     );
 
@@ -332,7 +332,7 @@ describe("PATCH /users/:id", () => {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
-        body: JSON.stringify({ name: "Updated" }),
+        body: JSON.stringify({ loginId: "Updated User" }),
       }),
     );
 

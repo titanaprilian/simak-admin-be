@@ -4,11 +4,12 @@ import { CreateSystemError, DeleteSelfError, UpdateSystemError } from "./error";
 import { DeleteSystemError } from "../rbac/error";
 import { Prisma } from "@generated/prisma";
 import type { Logger } from "pino";
+import { handlePrismaError } from "@/libs/exceptions";
 
 export const SAFE_USER_SELECT = {
   id: true,
   email: true,
-  name: true,
+  loginId: true,
   isActive: true,
   roleId: true,
   createdAt: true,
@@ -54,10 +55,10 @@ export abstract class UserService {
       where.isActive = isActive;
     }
 
-    // Filter: Search (Name OR Email)
+    // Filter: Search (Login Id OR Email)
     if (search) {
       where.OR = [
-        { name: { contains: search } },
+        { loginId: { contains: search } },
         { email: { contains: search } },
       ];
     }
@@ -71,6 +72,11 @@ export abstract class UserService {
         where,
         select: {
           ...SAFE_USER_SELECT,
+          lecturer: {
+            select: {
+              fullName: true,
+            },
+          },
           role: {
             select: {
               name: true,
@@ -89,6 +95,7 @@ export abstract class UserService {
     // Convert Date objects to ISO strings
     const userWithStringDates = users.map((user) => ({
       ...user,
+      name: user.lecturer?.fullName,
       roleName: user.role?.name,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
@@ -112,69 +119,77 @@ export abstract class UserService {
   ) {
     log.debug({ email: data.email, roleId: data.roleId }, "Creating new user");
 
-    // 🛡️ SECURITY CHECK: Duplicate SuperAdmin
-    // If the user being created is a SuperAdmin, BLOCK IT. We need to make sure SuperAdmin is only one
-    const role = await prisma.role.findUnique({
-      where: {
-        id: data.roleId,
-      },
-    });
-    if (role?.name === "SuperAdmin") {
-      log.warn(
-        { email: data.email, roleId: data.roleId },
-        "User creation blocked: Attempt to create duplicate SuperAdmin",
+    try {
+      // 🛡️ SECURITY CHECK: Duplicate SuperAdmin
+      // If the user being created is a SuperAdmin, BLOCK IT. We need to make sure SuperAdmin is only one
+      const role = await prisma.role.findUnique({
+        where: {
+          id: data.roleId,
+        },
+      });
+      if (role?.name === "SuperAdmin") {
+        log.warn(
+          { email: data.email, roleId: data.roleId },
+          "User creation blocked: Attempt to create duplicate SuperAdmin",
+        );
+        throw new CreateSystemError(locale);
+      }
+
+      const hashedPassword = await Bun.password.hash(data.password);
+
+      const user = await prisma.user.create({
+        data: {
+          ...data,
+          password: hashedPassword,
+        },
+        select: SAFE_USER_SELECT,
+      });
+
+      log.info(
+        { userId: user.id, email: user.email, roleId: user.roleId },
+        "User created successfully",
       );
-      throw new CreateSystemError(locale);
+
+      return {
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      handlePrismaError(error, log);
     }
-
-    const hashedPassword = await Bun.password.hash(data.password);
-
-    const user = await prisma.user.create({
-      data: {
-        ...data,
-        password: hashedPassword,
-      },
-      select: SAFE_USER_SELECT,
-    });
-
-    log.info(
-      { userId: user.id, email: user.email, roleId: user.roleId },
-      "User created successfully",
-    );
-
-    return {
-      ...user,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-    };
   }
 
   static async getUser(id: string, log: Logger) {
     log.debug({ userId: id }, "Fetching user details");
 
-    const user = await prisma.user.findUniqueOrThrow({
-      where: { id },
-      select: {
-        ...SAFE_USER_SELECT,
-        role: {
-          select: {
-            name: true,
+    try {
+      const user = await prisma.user.findUniqueOrThrow({
+        where: { id },
+        select: {
+          ...SAFE_USER_SELECT,
+          role: {
+            select: {
+              name: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    log.info(
-      { userId: id, email: user.email, roleName: user.role?.name },
-      "User details retrieved successfully",
-    );
+      log.info(
+        { userId: id, email: user.email, roleName: user.role?.name },
+        "User details retrieved successfully",
+      );
 
-    return {
-      ...user,
-      roleName: user.role?.name,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-    };
+      return {
+        ...user,
+        roleName: user.role?.name,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      handlePrismaError(error, log);
+    }
   }
 
   static async updateUser(
@@ -185,41 +200,45 @@ export abstract class UserService {
   ) {
     log.debug({ userId: id }, "Updating user");
 
-    const updateData = { ...data };
-    if (updateData.password) {
-      updateData.password = await Bun.password.hash(updateData.password);
-    }
+    try {
+      const updateData = { ...data };
+      if (updateData.password) {
+        updateData.password = await Bun.password.hash(updateData.password);
+      }
 
-    // 🛡️ SECURITY CHECK: Inactive SuperAdmin
-    // If the user update the status field to inactive and the user is a SuperAdmin, BLOCK IT.
-    if (updateData.isActive === false) {
-      const existingUser = await prisma.user.findUnique({
+      // 🛡️ SECURITY CHECK: Inactive SuperAdmin
+      // If the user update the status field to inactive and the user is a SuperAdmin, BLOCK IT.
+      if (updateData.isActive === false) {
+        const existingUser = await prisma.user.findUnique({
+          where: { id },
+          select: { role: { select: { name: true } } },
+        });
+
+        if (existingUser?.role?.name === "SuperAdmin") {
+          log.warn(
+            { userId: id },
+            "User update blocked: Attempt to deactivate SuperAdmin",
+          );
+          throw new UpdateSystemError(locale);
+        }
+      }
+
+      const user = await prisma.user.update({
         where: { id },
-        select: { role: { select: { name: true } } },
+        select: SAFE_USER_SELECT,
+        data: updateData,
       });
 
-      if (existingUser?.role?.name === "SuperAdmin") {
-        log.warn(
-          { userId: id },
-          "User update blocked: Attempt to deactivate SuperAdmin",
-        );
-        throw new UpdateSystemError(locale);
-      }
+      log.info({ userId: id, email: user.email }, "User updated successfully");
+
+      return {
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      handlePrismaError(error, log);
     }
-
-    const user = await prisma.user.update({
-      where: { id },
-      select: SAFE_USER_SELECT,
-      data: updateData,
-    });
-
-    log.info({ userId: id, email: user.email }, "User updated successfully");
-
-    return {
-      ...user,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-    };
   }
 
   static async deleteUser(
@@ -233,48 +252,52 @@ export abstract class UserService {
       "Attempting to delete user",
     );
 
-    // 🛡️ SECURITY CHECK: Suicide Prevention
-    if (targetId === requestingUserId) {
-      log.warn(
-        { targetUserId: targetId },
-        "User deletion blocked: Self-deletion attempt",
+    try {
+      // 🛡️ SECURITY CHECK: Suicide Prevention
+      if (targetId === requestingUserId) {
+        log.warn(
+          { targetUserId: targetId },
+          "User deletion blocked: Self-deletion attempt",
+        );
+        throw new DeleteSelfError(locale);
+      }
+
+      // Fetch user + Role to check permissions
+      const targetUser = await prisma.user.findUniqueOrThrow({
+        where: { id: targetId },
+        include: { role: true },
+      });
+
+      // 🛡️ SECURITY CHECK: Protected User
+      // If the user being deleted is a SuperAdmin, BLOCK IT.
+      if (targetUser.role && PROTECTED_ROLES.includes(targetUser.role.name)) {
+        log.warn(
+          { targetUserId: targetId, roleName: targetUser.role.name },
+          "User deletion blocked: Protected SuperAdmin user",
+        );
+        throw new DeleteSystemError(
+          "Cannot delete a user with SuperAdmin privileges.",
+        );
+      }
+
+      // Safe to delete
+      const user = await prisma.user.delete({
+        where: { id: targetId },
+        select: SAFE_USER_SELECT,
+      });
+
+      log.info(
+        { userId: targetId, email: user.email },
+        "User deleted successfully",
       );
-      throw new DeleteSelfError(locale);
+
+      return {
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      handlePrismaError(error, log);
     }
-
-    // Fetch user + Role to check permissions
-    const targetUser = await prisma.user.findUniqueOrThrow({
-      where: { id: targetId },
-      include: { role: true },
-    });
-
-    // 🛡️ SECURITY CHECK: Protected User
-    // If the user being deleted is a SuperAdmin, BLOCK IT.
-    if (targetUser.role && PROTECTED_ROLES.includes(targetUser.role.name)) {
-      log.warn(
-        { targetUserId: targetId, roleName: targetUser.role.name },
-        "User deletion blocked: Protected SuperAdmin user",
-      );
-      throw new DeleteSystemError(
-        "Cannot delete a user with SuperAdmin privileges.",
-      );
-    }
-
-    // Safe to delete
-    const user = await prisma.user.delete({
-      where: { id: targetId },
-      select: SAFE_USER_SELECT,
-    });
-
-    log.info(
-      { userId: targetId, email: user.email },
-      "User deleted successfully",
-    );
-
-    return {
-      ...user,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-    };
   }
 }
