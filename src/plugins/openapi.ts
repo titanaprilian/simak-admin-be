@@ -57,7 +57,7 @@ A production-ready authentication service with Role-Based Access Control (RBAC).
       {
         name: "User",
         description:
-          "User management - Create, read, update, delete users. Requires user_management permissions",
+          "User management - Create, read, update, delete users. Requires user_management permissions.",
       },
       {
         name: "Health",
@@ -73,6 +73,26 @@ A production-ready authentication service with Role-Based Access Control (RBAC).
         name: "Dashboard",
         description:
           "Dashboard statistics - View system overview (total users, roles, features, user distribution). Accessible to all authenticated users.",
+      },
+      {
+        name: "Faculty",
+        description:
+          "Faculty management - Create, read, update, delete faculties. Create requires faculty_management:create permission. Update/Delete requires faculty_management permission or SuperAdmin role.",
+      },
+      {
+        name: "Study Program",
+        description:
+          "Study Program management - Create, read, update, delete study programs within faculties. Create requires studyProgram_management:create permission. Update/Delete requires studyProgram_management permission or FACULTY/STUDY_PROGRAM scoped position.",
+      },
+      {
+        name: "Lecturer",
+        description:
+          "Lecturer management - Create, read, update, delete lecturer profiles. Requires lecturer_management permissions.",
+      },
+      {
+        name: "Position",
+        description:
+          "Position management - Create, read, update, delete positions within the system. Requires position_management permissions. Position assignments require position:assign permission.",
       },
     ],
 
