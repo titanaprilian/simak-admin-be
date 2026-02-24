@@ -1,6 +1,11 @@
 import { AuthService } from "./service";
 import { AuthModel } from "./model";
-import { LoginSchema, RefreshTokenSchema, TokenSchema } from "./schema";
+import {
+  LoginIdSchema,
+  LoginSchema,
+  RefreshTokenSchema,
+  TokenSchema,
+} from "./schema";
 import { errorResponse, successResponse } from "@/libs/response";
 import { accessJwt, refreshJwt } from "@/plugins/jwt";
 import { env } from "@/config/env";
@@ -26,10 +31,17 @@ const secureCookieOptions = {
   sameSite: isProduction ? ("none" as const) : ("lax" as const),
   path: "/",
 };
+
 const publicAuth = createBaseApp()
   .use(authRateLimit)
   .use(accessJwt)
   .use(refreshJwt)
+
+  /**
+   * POST /auth/login
+   * Public login endpoint using email + password.
+   * On success, issues access/refresh tokens and stores refresh token in httpOnly cookie.
+   */
   .post(
     "/login",
     async ({ body, set, cookie, log, accessJwt, refreshJwt, locale }) => {
@@ -71,6 +83,7 @@ const publicAuth = createBaseApp()
           refresh_token: refreshToken,
           user: {
             id: user.id,
+            loginId: user.loginId,
             email: user.email,
             name: user.name,
           },
@@ -93,6 +106,82 @@ const publicAuth = createBaseApp()
       },
     },
   )
+
+  /**
+   * POST /auth/login-id
+   * Public login endpoint using loginId + password.
+   * Behavior is intentionally the same as email-login to keep client integration consistent.
+   */
+  .post(
+    "/login-id",
+    async ({ body, set, cookie, log, accessJwt, refreshJwt, locale }) => {
+      const user = await AuthService.loginWithLoginId(body, log, locale);
+
+      if (!user) {
+        return errorResponse(
+          set,
+          401,
+          { key: "auth.invalidCredentialsNIK" },
+          null,
+          locale,
+        );
+      }
+
+      const tokenId = await AuthService.createRefreshToken(user.id);
+
+      const accessToken = await accessJwt.sign({
+        sub: user.id,
+        tv: user.tokenVersion,
+      });
+
+      const refreshToken = await refreshJwt.sign({
+        sub: user.id,
+        tv: user.tokenVersion,
+        jti: tokenId,
+      });
+
+      cookie.refresh_token.set({
+        value: refreshToken,
+        ...cookieOptions,
+        maxAge: REFRESH_TOKEN_MAX_AGE,
+      });
+
+      return successResponse(
+        set,
+        {
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          user: {
+            id: user.id,
+            loginId: user.loginId,
+            email: user.email,
+            name: user.name,
+          },
+        },
+        { key: "auth.loginSuccess" },
+        200,
+        undefined,
+        locale,
+      );
+    },
+    {
+      body: LoginIdSchema,
+      security: [{}], // Public route
+      response: {
+        200: AuthModel.login,
+        400: AuthModel.validationError,
+        401: AuthModel.unauthorizedError,
+        403: AuthModel.accountDisabledError,
+        500: AuthModel.error,
+      },
+    },
+  )
+
+  /**
+   * POST /auth/refresh
+   * Public token-refresh endpoint.
+   * Validates incoming refresh JWT, performs rotation in service layer, then returns new tokens.
+   */
   .post(
     "/refresh",
     async ({ body, set, cookie, log, accessJwt, refreshJwt, locale }) => {
@@ -174,6 +263,12 @@ const publicAuth = createBaseApp()
       },
     },
   )
+
+  /**
+   * POST /auth/logout
+   * Public logout endpoint for current session.
+   * Best-effort revocation: if refresh token is valid, it is revoked; cookie is always cleared.
+   */
   .post(
     "/logout",
     async ({ body, set, log, cookie, refreshJwt, locale }) => {
@@ -224,6 +319,12 @@ const publicAuth = createBaseApp()
  */
 const protectedAuth = createProtectedApp()
   .use(refreshJwt)
+
+  /**
+   * POST /auth/logout/all
+   * Protected endpoint to revoke all user sessions.
+   * Requires valid access token + matching refresh token owner before revoking all tokens.
+   */
   .post(
     "/logout/all",
     async ({ user, body, log, cookie, set, refreshJwt, locale }) => {
@@ -296,6 +397,11 @@ const protectedAuth = createProtectedApp()
       },
     },
   )
+
+  /**
+   * GET /auth/me
+   * Protected endpoint to fetch current authenticated user profile.
+   */
   .get(
     "/me",
     async ({ user, log, set, locale }) => {
@@ -305,6 +411,7 @@ const protectedAuth = createProtectedApp()
         set,
         {
           id: data.id,
+          loginId: data.loginId,
           email: data.email,
           name: data.name,
           roleName: data.roleName,

@@ -6,8 +6,9 @@ import { createErrorSchema, createResponseSchema } from "@/libs/response";
  */
 export const PublicUser = z.object({
   id: z.string(),
-  email: z.email(),
-  name: z.string(),
+  loginId: z.string(),
+  email: z.email().nullable().optional(),
+  name: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -17,8 +18,9 @@ export const PublicUser = z.object({
  */
 export const PublicUserWithRole = z.object({
   id: z.string(),
-  email: z.email(),
-  name: z.string(),
+  loginId: z.string().optional(),
+  email: z.email().nullable().optional(),
+  name: z.string().nullable().optional(),
   roleName: z.string(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -32,6 +34,7 @@ export const AuthTokenResponse = z.object({
   refresh_token: z.string(),
   user: PublicUser.pick({
     id: true,
+    loginId: true,
     email: true,
     name: true,
   }),
@@ -48,6 +51,7 @@ export const AuthModel = {
       refresh_token: z.string(),
       user: PublicUser.pick({
         id: true,
+        loginId: true,
         email: true,
         name: true,
       }),

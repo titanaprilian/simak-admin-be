@@ -10,6 +10,8 @@ export const id = {
   emailAlreadyExists: "Email sudah ada",
   emailNotFound: "Email tidak ditemukan",
   invalidCredentials: "Email atau kata sandi tidak valid",
+  invalidCredentialsNIK: "NIK atau kata sandi tidak valid",
+  invalidCredentialsNIM: "NIM atau kata sandi tidak valid",
   accountDisabled: "Akun Anda telah dinonaktifkan.",
   accountNotVerified: "Akun belum diverifikasi",
   passwordChanged: "Kata sandi berhasil diubah",

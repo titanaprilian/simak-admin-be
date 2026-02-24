@@ -19,14 +19,15 @@ generator prismabox {
 
 model User {
   id            String         @id @default(cuid())
-  email         String         @unique
+  loginId       String         @unique
+  email         String?        @unique
   password      String
-  name          String?
   isActive      Boolean        @default(true)
   tokenVersion  Int            @default(0)
   roleId        String
   role          Role           @relation(fields: [roleId], references: [id], onDelete: Restrict)
   refreshTokens RefreshToken[]
+  lecturer      Lecturer?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -39,6 +40,43 @@ model RefreshToken {
   expiresAt DateTime
   revoked   Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model Faculty {
+  id        String         @id @default(cuid())
+  code      String         @unique
+  name      String
+  programs  StudyProgram[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model StudyProgram {
+  id        String     @id @default(cuid())
+  facultyId String
+  faculty   Faculty    @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  code      String     @unique
+  name      String
+  lecturers Lecturer[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([facultyId])
+}
+
+model Lecturer {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nidn           String?
+  fullName       String
+  gender         String
+  studyProgramId String
+  studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id], onDelete: Restrict)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([studyProgramId])
 }
 
 model Role {

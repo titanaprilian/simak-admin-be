@@ -10,6 +10,8 @@ export const es = {
   emailAlreadyExists: "El email ya existe",
   emailNotFound: "Email no encontrado",
   invalidCredentials: "Email o contraseña inválidos",
+  invalidCredentialsNIK: "NIK o contraseña inválidos",
+  invalidCredentialsNIM: "NIM o contraseña inválidos",
   accountDisabled: "Tu cuenta ha sido deshabilitada.",
   accountNotVerified: "Cuenta no verificada",
   passwordChanged: "Contraseña cambiada exitosamente",

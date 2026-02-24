@@ -11,7 +11,6 @@ const FEATURES = [
 
 const ROLES = [
   { name: "SuperAdmin", description: "Full System Access" },
-  { name: "Staff", description: "Standard Employee" },
 ] as const;
 
 // Helper Type for IntelliSense
@@ -33,10 +32,6 @@ const ROLE_PERMISSIONS: Record<
     // SuperAdmin gets everything (we will handle this logically in the loop, or explicit here)
     user_management: { c: true, r: true, u: true, d: true, p: true },
     RBAC_management: { c: true, r: true, u: true, d: true, p: true },
-  },
-  Staff: {
-    user_management: { c: false, r: false, u: false, d: false, p: false },
-    RBAC_management: { c: false, r: false, u: false, d: false, p: false },
   },
 };
 
@@ -115,9 +110,8 @@ async function main() {
   // 1. SAFEGUARD: Get IDs first and throw error if missing
   console.log(roleMap);
   const adminRoleId = roleMap.get("SuperAdmin");
-  const staffRoleId = roleMap.get("Staff");
 
-  if (!adminRoleId || !staffRoleId) {
+  if (!adminRoleId) {
     throw new Error(
       "❌ CRITICAL ERROR: Role IDs missing. Did the Roles seeding step finish?",
     );
@@ -129,38 +123,14 @@ async function main() {
     update: { roleId: adminRoleId },
     create: {
       email: "admin@system.com",
-      name: "Super Administrator",
+      loginId: "superAdmin",
       password,
       roleId: roleMap.get("SuperAdmin")!,
       isActive: true,
     },
   });
 
-  // Staff
-  for (let i = 1; i <= 10; i++) {
-    const email = `staff${i}@system.com`;
-    const name = `John Staff ${i}`;
-
-    await prisma.user.upsert({
-      where: { email },
-      update: {
-        roleId: staffRoleId,
-        name,
-      },
-      create: {
-        email,
-        name,
-        password,
-        roleId: staffRoleId,
-        isActive: true,
-      },
-    });
-
-    console.log(`Seeded user: ${email}`);
-  }
-
   console.log("✅ Seeding completed successfully!");
-  console.log("   - admin@system.com / Password123");
 }
 
 main()

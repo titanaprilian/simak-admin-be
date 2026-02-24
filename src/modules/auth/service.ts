@@ -1,43 +1,149 @@
 import { prisma } from "@/libs/prisma";
-import type { LoginInput } from "./schema";
+import type { LoginIdInput, LoginInput, LoginResult } from "./schema";
 import { AccountDisabledError, UnauthorizedError } from "@libs/exceptions";
 import { parseDuration } from "@/utils/time";
 import { env } from "@/config/env";
 import type { Logger } from "pino";
 
 export abstract class AuthService {
+  /**
+   * Login using email + password.
+   * Flow: normalize email -> fetch user -> verify password/active status -> return safe login payload.
+   */
   static async login(data: LoginInput, log: Logger, locale: string = "en") {
-    const email = data.email.toLowerCase();
+    const email = data.email.trim().toLowerCase();
     log.debug({ email }, "Login attempt initiated");
 
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        lecturer: {
+          select: {
+            fullName: true,
+          },
+        },
+      },
     });
     if (!user) {
       log.warn({ email }, "Login failed: User not found");
       return null;
     }
 
-    const valid = await Bun.password.verify(data.password, user.password);
-    if (!valid) {
-      log.warn({ email }, "Login failed: Invalid password");
+    const result = await this.verifyAndBuildLoginUser({
+      user,
+      password: data.password,
+      log,
+      locale,
+      identity: { email },
+    });
+
+    return result;
+  }
+
+  /**
+   * Login using loginId + password.
+   * This mirrors `login` behavior, but uses `loginId` as the unique identifier.
+   */
+  static async loginWithLoginId(
+    data: LoginIdInput,
+    log: Logger,
+    locale: string = "en",
+  ) {
+    const loginId = data.loginId.trim();
+    log.debug({ loginId }, "Login attempt initiated");
+
+    const user = await prisma.user.findUnique({
+      where: { loginId },
+      include: {
+        lecturer: {
+          select: {
+            fullName: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      log.warn({ loginId }, "Login failed: User not found");
       return null;
     }
 
+    const result = await this.verifyAndBuildLoginUser({
+      user,
+      password: data.password,
+      log,
+      locale,
+      identity: { loginId },
+    });
+
+    return result;
+  }
+
+  /**
+   * Shared credential verification used by both email-login and loginId-login.
+   * It centralizes password check, account status validation, and safe response shaping.
+   */
+  private static async verifyAndBuildLoginUser({
+    user,
+    password,
+    log,
+    locale,
+    identity,
+  }: {
+    user: {
+      id: string;
+      loginId: string;
+      email: string | null;
+      password: string;
+      isActive: boolean;
+      tokenVersion: number;
+      lecturer: {
+        fullName: string;
+      } | null;
+    };
+    password: string;
+    log: Logger;
+    locale: string;
+    identity: {
+      email?: string;
+      loginId?: string;
+    };
+  }): Promise<LoginResult | null> {
+    const logContext = {
+      userId: user.id,
+      loginId: user.loginId,
+      email: user.email,
+      ...identity,
+    };
+
+    // Always verify password against hashed value stored in DB.
+    const valid = await Bun.password.verify(password, user.password);
+    if (!valid) {
+      log.warn(logContext, "Login failed: Invalid password");
+      return null;
+    }
+
+    // Block login for disabled accounts even when credentials are correct.
     if (!user.isActive) {
-      log.warn({ email }, "Login failed: Account disabled");
+      log.warn(logContext, "Login failed: Account disabled");
       throw new AccountDisabledError(locale);
     }
 
-    log.info({ userId: user.id, email }, "User logged in successfully");
+    log.info(logContext, "User logged in successfully");
     return {
       id: user.id,
+      loginId: user.loginId,
       email: user.email,
-      name: user.name,
+      // Full name is sourced from lecturer profile when available.
+      name: user.lecturer?.fullName || null,
       tokenVersion: user.tokenVersion,
     };
   }
 
+  /**
+   * Creates and persists a refresh-token ID in DB.
+   * Returned token ID is later embedded as `jti` in the signed refresh JWT.
+   */
   static async createRefreshToken(userId: string) {
     const tokenId = crypto.randomUUID();
     const expiresIn = parseDuration(env.JWT_REFRESH_EXPIRES_IN || "7d");
@@ -53,6 +159,14 @@ export abstract class AuthService {
     return tokenId;
   }
 
+  /**
+   * Refresh flow with rotation and reuse detection.
+   * Security behavior:
+   * - token must exist and not be revoked/expired
+   * - user must still be active and tokenVersion must match
+   * - old refresh token is revoked and replaced by a new one (rotation)
+   * - if revoked token is reused, all user sessions are revoked
+   */
   static async refresh({
     userId,
     tokenVersion,
@@ -158,14 +272,19 @@ export abstract class AuthService {
     return {
       user: {
         id: user.id,
+        loginId: user.loginId,
         email: user.email,
-        name: user.name,
       },
+      // Caller signs this new value into the next refresh JWT.
       refreshToken: newRefreshToken,
       tokenVersion: user.tokenVersion,
     };
   }
 
+  /**
+   * Logout from current session by revoking one refresh token.
+   * This method is idempotent: missing/already-revoked tokens are treated as no-op.
+   */
   static async logout({
     refreshToken,
     userId,
@@ -214,6 +333,11 @@ export abstract class AuthService {
     log.info({ userId, tokenId: token.id }, "User logged out (token revoked)");
   }
 
+  /**
+   * Logout from all devices/sessions.
+   * Revokes all active refresh tokens for the user and increments tokenVersion,
+   * so all existing access tokens become invalid on next authorization check.
+   */
   static async logoutAll({
     userId,
     requestingTokenId,
@@ -258,18 +382,27 @@ export abstract class AuthService {
     );
   }
 
+  /**
+   * Returns authenticated user's profile used by `/auth/me`.
+   * Throws Unauthorized when token user no longer exists.
+   */
   static async me(userId: string, log: Logger, locale: string = "en") {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
+        loginId: true,
         email: true,
-        name: true,
         createdAt: true,
         updatedAt: true,
         role: {
           select: {
             name: true,
+          },
+        },
+        lecturer: {
+          select: {
+            fullName: true,
           },
         },
       },
@@ -287,14 +420,20 @@ export abstract class AuthService {
     log.debug({ userId }, "User profile fetched");
     return {
       id: user.id,
+      loginId: user.loginId,
       email: user.email,
-      name: user.name,
+      // Name is optional because not every user has linked lecturer data.
+      name: user.lecturer?.fullName,
       roleName: user.role.name,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };
   }
 
+  /**
+   * Scheduled housekeeping to delete expired refresh token rows.
+   * Keeps token table small and removes stale credentials.
+   */
   static async pruneExpiredTokens(log: Logger) {
     try {
       const { count } = await prisma.refreshToken.deleteMany({

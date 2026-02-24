@@ -1,8 +1,11 @@
 import pino from "pino";
 
 const isDev = process.env.NODE_ENV === "development";
+const isTest = process.env.NODE_ENV === "test";
 
 export const logger = pino({
+  // Silence all logs in automated tests, including `error`.
+  enabled: !isTest,
   level: process.env.LOG_LEVEL || "info",
 
   redact: {
