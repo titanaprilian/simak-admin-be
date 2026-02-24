@@ -2,7 +2,15 @@ import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
 
 import { openapiPlugin } from "./plugins/openapi";
-import { user, health, auth, rbac, dashboard } from "./modules";
+import {
+  user,
+  health,
+  auth,
+  rbac,
+  dashboard,
+  faculty,
+  studyProgram,
+} from "./modules";
 import { prisma } from "./libs/prisma";
 import { logger } from "./libs/logger";
 import { globalRateLimit } from "./plugins/rate-limit";
@@ -26,7 +34,7 @@ export const app = new Elysia()
         "Accept-Language",
         "accept-language",
       ],
-      exposedHeaders: ["Content-Language"],
+      exposeHeaders: ["Content-Language"],
     }),
   )
   .use(
@@ -58,13 +66,15 @@ export const app = new Elysia()
   .use(rbac)
   .use(user)
   .use(dashboard)
+  .use(faculty)
+  .use(studyProgram)
   .use(globalErrorHandler)
   .listen(port);
 
 logger.info(
   {
     url: `http://${app.server?.hostname}:${app.server?.port}`,
-    env: process.env.NODE_ENV,
+    env: env.NODE_ENV,
   },
   "🦊 Elysia server started",
 );

@@ -12,8 +12,6 @@ import { hasPermission } from "@/middleware/permission";
 
 const FEATURE_NAME = "faculty_management";
 
-const publicFaculty = createBaseApp();
-
 const protectedFaculty = createProtectedApp()
   .get(
     "/",
@@ -137,5 +135,5 @@ const protectedFaculty = createProtectedApp()
 
 export const faculty = createBaseApp({ tags: ["Faculty"] }).group(
   "/faculties",
-  (app) => app.use(publicFaculty).use(protectedFaculty),
+  (app) => app.use(protectedFaculty),
 );
