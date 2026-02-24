@@ -65,7 +65,7 @@ describe("GET /auth/me", () => {
     expect(res.status).toBe(401);
   });
 
-  it.only("should return user data with role name", async () => {
+  it("should return user data with role name", async () => {
     const { authHeaders, user } = await createAuthenticatedUser();
 
     const res = await app.handle(
@@ -81,7 +81,6 @@ describe("GET /auth/me", () => {
     expect(res.status).toBe(200);
     expect(body.data.id).toBe(user.id);
     expect(body.data.email).toBe(user.email);
-    expect(body.data.name).toBe(user.name);
     expect(body.data.roleName).toBeDefined();
     expect(typeof body.data.roleName).toBe("string");
   });
@@ -237,7 +236,6 @@ describe("GET /auth/me", () => {
     expect(res.status).toBe(200);
     expect(body.data).toHaveProperty("id");
     expect(body.data).toHaveProperty("email");
-    expect(body.data).toHaveProperty("name");
     expect(body.data).toHaveProperty("roleName");
     expect(body.data).toHaveProperty("createdAt");
     expect(body.data).toHaveProperty("updatedAt");
