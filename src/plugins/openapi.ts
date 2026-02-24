@@ -26,18 +26,19 @@ export const openapiPlugin = openapi({
   documentation: {
     openapi: "3.0.3",
     info: {
-      title: "Elysia Auth RBAC API",
+      title: "SIMAK API",
       version: "1.0.0",
       description: `
-A production-ready authentication service with Role-Based Access Control (RBAC).
+A production-ready academic management system with Role-Based Access Control (RBAC).
 
 ### Features
 - JWT-based authentication with access & refresh tokens
 - Token rotation for security
 - Session management (logout single/all devices)
-- User management with CRUD operations
+- User, Faculty, Study Program, Lecturer, and Position management
 - Role & Feature management with granular permissions
 - Dashboard statistics endpoint
+- Position-based scope access (FACULTY, STUDY_PROGRAM)
 
 ### Security
 - Password hashing with bcrypt
