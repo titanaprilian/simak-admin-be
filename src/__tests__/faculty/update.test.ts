@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, afterAll } from "bun:test";
 import { app } from "@/server";
 import { prisma } from "@/libs/prisma";
 import {
+  assignFacultyPosition,
   createAuthenticatedUser,
+  createAuthenticatedSuperAdmin,
   createTestRoleWithPermissions,
   randomIp,
   resetDatabase,
@@ -69,11 +71,11 @@ describe("PATCH /faculties/:id", () => {
     expect(res.status).toBe(403);
   });
 
-  it("should update faculty successfully", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+  it("should update faculty successfully as SuperAdmin", async () => {
+    await createTestRoleWithPermissions("SuperAdmin", [
       { featureName: "faculty_management", action: "update" },
     ]);
+    const { authHeaders } = await createAuthenticatedSuperAdmin();
 
     const faculty = await prisma.faculty.create({
       data: { code: "FK", name: "Fakultas Teknik" },
@@ -96,11 +98,106 @@ describe("PATCH /faculties/:id", () => {
     expect(body.data.name).toBe("Fakultas Teknologi");
   });
 
-  it("should return 404 if faculty not found", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+  it("should update faculty successfully with faculty scoped position", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "faculty_management", action: "update" },
     ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
+
+    const faculty = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    await assignFacultyPosition({
+      userId: user.id,
+      facultyId: faculty.id,
+      positionName: "DEKAN",
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/faculties/${faculty.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify({ name: "Fakultas Teknologi" }),
+      }),
+    );
+
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.name).toBe("Fakultas Teknologi");
+  });
+
+  it("should return 403 if user has update permission but no faculty scope", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
+      { featureName: "faculty_management", action: "update" },
+    ]);
+    const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
+
+    const faculty = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/faculties/${faculty.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify({ name: "New Name" }),
+      }),
+    );
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should return 403 if user has faculty scoped position for different faculty", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
+      { featureName: "faculty_management", action: "update" },
+    ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
+
+    const faculty1 = await prisma.faculty.create({
+      data: { code: "FK1", name: "Fakultas Satu" },
+    });
+
+    const faculty2 = await prisma.faculty.create({
+      data: { code: "FK2", name: "Fakultas Dua" },
+    });
+
+    await assignFacultyPosition({
+      userId: user.id,
+      facultyId: faculty1.id,
+      positionName: "DEKAN",
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/faculties/${faculty2.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify({ name: "New Name" }),
+      }),
+    );
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should return 404 if faculty not found", async () => {
+    await createTestRoleWithPermissions("SuperAdmin", [
+      { featureName: "faculty_management", action: "update" },
+    ]);
+    const { authHeaders } = await createAuthenticatedSuperAdmin();
 
     const res = await app.handle(
       new Request("http://localhost/faculties/non-existent-id", {
@@ -117,10 +214,12 @@ describe("PATCH /faculties/:id", () => {
   });
 
   it("should return 409 if code already exists", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+    const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "faculty_management", action: "update" },
     ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
 
     await prisma.faculty.createMany({
       data: [
@@ -130,6 +229,12 @@ describe("PATCH /faculties/:id", () => {
     });
 
     const faculty = await prisma.faculty.findFirst({ where: { code: "FK1" } });
+
+    await assignFacultyPosition({
+      userId: user.id,
+      facultyId: faculty!.id,
+      positionName: "DEKAN",
+    });
 
     const res = await app.handle(
       new Request(`http://localhost/faculties/${faculty!.id}`, {
@@ -146,13 +251,21 @@ describe("PATCH /faculties/:id", () => {
   });
 
   it("should update faculty in database", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+    const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "faculty_management", action: "update" },
     ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
 
     const faculty = await prisma.faculty.create({
       data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    await assignFacultyPosition({
+      userId: user.id,
+      facultyId: faculty.id,
+      positionName: "DEKAN",
     });
 
     await app.handle(

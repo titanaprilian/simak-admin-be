@@ -7,6 +7,7 @@ import { prisma } from "./prisma";
 const FEATURES = [
   { name: "user_management", description: "Manage system users" },
   { name: "RBAC_management", description: "Manage roles and permissions" },
+  { name: "position_management", description: "Manage positions and scopes" },
 ] as const;
 
 const ROLES = [
@@ -32,6 +33,7 @@ const ROLE_PERMISSIONS: Record<
     // SuperAdmin gets everything (we will handle this logically in the loop, or explicit here)
     user_management: { c: true, r: true, u: true, d: true, p: true },
     RBAC_management: { c: true, r: true, u: true, d: true, p: true },
+    position_management: { c: true, r: true, u: true, d: true, p: true },
   },
 };
 

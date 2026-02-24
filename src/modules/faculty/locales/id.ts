@@ -5,4 +5,6 @@ export const id = {
   updateSuccess: "Fakultas berhasil diperbarui",
   deleteSuccess: "Fakultas berhasil dihapus",
   notFound: "Fakultas tidak ditemukan",
+  forbiddenRole:
+    "Peran {{roleName}} tidak dapat melakukan tindakan ini pada fakultas",
 };

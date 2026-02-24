@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterAll } from "bun:test";
 import { app } from "@/server";
 import { prisma } from "@/libs/prisma";
 import {
+  assignFacultyPosition,
+  assignStudyProgramPosition,
   createAuthenticatedUser,
   createTestRoleWithPermissions,
   randomIp,
@@ -50,13 +52,21 @@ describe("PATCH /study-programs/:id", () => {
   });
 
   it("should update study program successfully", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+    const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "studyProgram_management", action: "update" },
     ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
 
     const faculty = await prisma.faculty.create({
       data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    await assignFacultyPosition({
+      userId: user.id,
+      facultyId: faculty.id,
+      positionName: "DEKAN",
     });
 
     const program = await prisma.studyProgram.create({
@@ -80,11 +90,39 @@ describe("PATCH /study-programs/:id", () => {
     expect(body.data.name).toBe("Teknik Komputer");
   });
 
-  it("should return 404 if study program not found", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+  it("should return 403 if user has update permission but no faculty scope", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "studyProgram_management", action: "update" },
     ]);
+    const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
+
+    const faculty = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    const program = await prisma.studyProgram.create({
+      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/study-programs/${program.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify({ name: "Teknik Komputer" }),
+      }),
+    );
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should return 404 if study program not found", async () => {
+    const role = await createTestRoleWithPermissions("SuperAdmin", [
+      { featureName: "studyProgram_management", action: "update" },
+    ]);
+    const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
     const res = await app.handle(
       new Request("http://localhost/study-programs/non-existent-id", {
@@ -101,13 +139,21 @@ describe("PATCH /study-programs/:id", () => {
   });
 
   it("should return 409 if code already exists", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+    const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "studyProgram_management", action: "update" },
     ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
 
     const faculty = await prisma.faculty.create({
       data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    await assignFacultyPosition({
+      userId: user.id,
+      facultyId: faculty.id,
+      positionName: "DEKAN",
     });
 
     await prisma.studyProgram.createMany({
@@ -133,5 +179,127 @@ describe("PATCH /study-programs/:id", () => {
     );
 
     expect(res.status).toBe(409);
+  });
+
+  it("should allow update when user has STUDY_PROGRAM scoped position on same program", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
+      { featureName: "studyProgram_management", action: "update" },
+    ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
+
+    const faculty = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    const program = await prisma.studyProgram.create({
+      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    });
+
+    await assignStudyProgramPosition({
+      userId: user.id,
+      studyProgramId: program.id,
+      positionName: "KAPRODI",
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/study-programs/${program.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify({ name: "Teknik Komputer" }),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+  });
+
+  it("should return 403 when user has STUDY_PROGRAM scope on different program", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
+      { featureName: "studyProgram_management", action: "update" },
+    ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
+
+    const faculty = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    const ownedProgram = await prisma.studyProgram.create({
+      data: { facultyId: faculty.id, code: "SI", name: "Sistem Informasi" },
+    });
+
+    const targetProgram = await prisma.studyProgram.create({
+      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    });
+
+    await assignStudyProgramPosition({
+      userId: user.id,
+      studyProgramId: ownedProgram.id,
+      positionName: "KAPRODI",
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/study-programs/${targetProgram.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify({ name: "Teknik Komputer" }),
+      }),
+    );
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should return 403 if user has faculty scope but study program is not in that faculty", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
+      { featureName: "studyProgram_management", action: "update" },
+    ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
+
+    const facultyWithScope = await prisma.faculty.create({
+      data: { code: "FK1", name: "Fakultas Teknik" },
+    });
+
+    const facultyWithoutScope = await prisma.faculty.create({
+      data: { code: "FK2", name: "Fakultas Ekonomi" },
+    });
+
+    await assignFacultyPosition({
+      userId: user.id,
+      facultyId: facultyWithScope.id,
+      positionName: "DEKAN",
+    });
+
+    const targetProgram = await prisma.studyProgram.create({
+      data: {
+        facultyId: facultyWithoutScope.id,
+        code: "TI",
+        name: "Teknik Informatika",
+      },
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/study-programs/${targetProgram.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify({ name: "Teknik Komputer" }),
+      }),
+    );
+
+    const body = await res.json();
+    expect(res.status).toBe(403);
+    expect(body.message).toBe("Forbidden");
   });
 });

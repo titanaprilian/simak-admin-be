@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterAll } from "bun:test";
 import { app } from "@/server";
 import { prisma } from "@/libs/prisma";
 import {
+  assignFacultyPosition,
+  assignStudyProgramPosition,
   createAuthenticatedUser,
   createTestRoleWithPermissions,
   randomIp,
@@ -66,13 +68,21 @@ describe("POST /study-programs", () => {
   });
 
   it("should create study program successfully", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+    const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "studyProgram_management", action: "create" },
     ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
 
     const faculty = await prisma.faculty.create({
       data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    await assignFacultyPosition({
+      userId: user.id,
+      facultyId: faculty.id,
+      positionName: "DEKAN",
     });
 
     const payload = {
@@ -97,6 +107,84 @@ describe("POST /study-programs", () => {
     expect(res.status).toBe(201);
     expect(body.data.code).toBe("TI");
     expect(body.data.name).toBe("Teknik Informatika");
+  });
+
+  it("should create study program successfully with RBAC create permission", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
+      { featureName: "studyProgram_management", action: "create" },
+    ]);
+    const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
+
+    const faculty = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    const payload = {
+      facultyId: faculty.id,
+      code: "TI",
+      name: "Teknik Informatika",
+    };
+
+    const res = await app.handle(
+      new Request("http://localhost/study-programs", {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    const body = await res.json();
+    expect(res.status).toBe(201);
+    expect(body.data.code).toBe("TI");
+  });
+
+  it("should return 403 if user has study_program-scoped position but no create permission", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
+      { featureName: "studyProgram_management", action: "read" },
+    ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
+
+    const faculty = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    const studyProgram = await prisma.studyProgram.create({
+      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    });
+
+    await assignStudyProgramPosition({
+      userId: user.id,
+      studyProgramId: studyProgram.id,
+      positionName: "KAPRODI",
+    });
+
+    const payload = {
+      facultyId: faculty.id,
+      code: "SI",
+      name: "Sistem Informasi",
+    };
+
+    const res = await app.handle(
+      new Request("http://localhost/study-programs", {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    const body = await res.json();
+    expect(res.status).toBe(403);
+    expect(body.message).toBe(
+      "Forbidden: You do not have 'create' permission for 'studyProgram_management'",
+    );
   });
 
   it("should return 400 if facultyId is missing", async () => {
@@ -174,10 +262,10 @@ describe("POST /study-programs", () => {
   });
 
   it("should return 400 if facultyId does not exist", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+    const role = await createTestRoleWithPermissions("SuperAdmin", [
       { featureName: "studyProgram_management", action: "create" },
     ]);
+    const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
     const payload = {
       facultyId: "non-existent-id",
@@ -200,13 +288,21 @@ describe("POST /study-programs", () => {
   });
 
   it("should return 409 if code already exists", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
+    const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "studyProgram_management", action: "create" },
     ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
 
     const faculty = await prisma.faculty.create({
       data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    await assignFacultyPosition({
+      userId: user.id,
+      facultyId: faculty.id,
+      positionName: "DEKAN",
     });
 
     await prisma.studyProgram.create({

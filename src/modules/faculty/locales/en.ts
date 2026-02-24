@@ -5,4 +5,5 @@ export const en = {
   updateSuccess: "Faculty updated successfully",
   deleteSuccess: "Faculty deleted successfully",
   notFound: "Faculty not found",
+  forbiddenRole: "Role {{roleName}} cannot perform this action on faculty",
 };

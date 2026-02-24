@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from "bun:test";
 import { app } from "@/server";
 import { prisma } from "@/libs/prisma";
 import {
+  assignStudyProgramPosition,
   createAuthenticatedUser,
   createTestRoleWithPermissions,
   randomIp,
@@ -110,5 +111,72 @@ describe("GET /study-programs/:id", () => {
     expect(res.status).toBe(200);
     expect(body.data.faculty).toBeDefined();
     expect(body.data.faculty.code).toBe("FK");
+  });
+
+  it("should allow read when user has STUDY_PROGRAM scoped position on same program", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
+      { featureName: "studyProgram_management", action: "read" },
+    ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
+
+    const faculty = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    const program = await prisma.studyProgram.create({
+      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    });
+
+    await assignStudyProgramPosition({
+      userId: user.id,
+      studyProgramId: program.id,
+      positionName: "KAPRODI",
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/study-programs/${program.id}`, {
+        headers: authHeaders,
+      }),
+    );
+
+    expect(res.status).toBe(200);
+  });
+
+  it("should return 403 when user has STUDY_PROGRAM scope on different program", async () => {
+    const role = await createTestRoleWithPermissions("TestUser", [
+      { featureName: "studyProgram_management", action: "read" },
+    ]);
+    const { authHeaders, user } = await createAuthenticatedUser({
+      roleId: role.id,
+    });
+
+    const faculty = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    const ownedProgram = await prisma.studyProgram.create({
+      data: { facultyId: faculty.id, code: "SI", name: "Sistem Informasi" },
+    });
+
+    const targetProgram = await prisma.studyProgram.create({
+      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    });
+
+    await assignStudyProgramPosition({
+      userId: user.id,
+      studyProgramId: ownedProgram.id,
+      positionName: "KAPRODI",
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/study-programs/${targetProgram.id}`, {
+        headers: authHeaders,
+      }),
+    );
+
+    // RBAC canRead is enough to read any study program
+    expect(res.status).toBe(200);
   });
 });

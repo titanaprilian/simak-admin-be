@@ -7,6 +7,8 @@ export const TEST_USER_ID = "ckv9x3y9x0001qz1abcde1234";
 export async function resetDatabase() {
   await prisma.refreshToken.deleteMany();
   await prisma.lecturer.deleteMany();
+  await prisma.positionAssignment.deleteMany();
+  await prisma.position.deleteMany();
   await prisma.user.deleteMany();
   await prisma.studyProgram.deleteMany();
   await prisma.faculty.deleteMany();
@@ -213,6 +215,94 @@ export const seedTestRoles = async () => {
   });
 };
 
+export async function assignFacultyPosition(params: {
+  userId: string;
+  facultyId: string;
+  positionName?: string;
+  isSingleSeat?: boolean;
+  isActive?: boolean;
+  startDate?: Date;
+  endDate?: Date | null;
+}) {
+  const {
+    userId,
+    facultyId,
+    positionName = "DEKAN",
+    isSingleSeat = true,
+    isActive = true,
+    startDate = new Date(),
+    endDate = null,
+  } = params;
+
+  const position = await prisma.position.upsert({
+    where: { name: positionName },
+    update: {
+      scopeType: "FACULTY",
+      isSingleSeat,
+    },
+    create: {
+      name: positionName,
+      scopeType: "FACULTY",
+      isSingleSeat,
+    },
+  });
+
+  return prisma.positionAssignment.create({
+    data: {
+      userId,
+      positionId: position.id,
+      facultyId,
+      startDate,
+      endDate,
+      isActive,
+    },
+  });
+}
+
+export async function assignStudyProgramPosition(params: {
+  userId: string;
+  studyProgramId: string;
+  positionName?: string;
+  isSingleSeat?: boolean;
+  isActive?: boolean;
+  startDate?: Date;
+  endDate?: Date | null;
+}) {
+  const {
+    userId,
+    studyProgramId,
+    positionName = "KAPRODI",
+    isSingleSeat = true,
+    isActive = true,
+    startDate = new Date(),
+    endDate = null,
+  } = params;
+
+  const position = await prisma.position.upsert({
+    where: { name: positionName },
+    update: {
+      scopeType: "STUDY_PROGRAM",
+      isSingleSeat,
+    },
+    create: {
+      name: positionName,
+      scopeType: "STUDY_PROGRAM",
+      isSingleSeat,
+    },
+  });
+
+  return prisma.positionAssignment.create({
+    data: {
+      userId,
+      positionId: position.id,
+      studyProgramId,
+      startDate,
+      endDate,
+      isActive,
+    },
+  });
+}
+
 export async function createLecturerTestFixture() {
   const faculty = await prisma.faculty.create({
     data: { code: "FK", name: "Fakultas Teknik" },
@@ -286,3 +376,179 @@ export async function createLecturerListTestFixtures(count: number) {
 
 // Helper to generate a random IP for each test
 export const randomIp = () => `10.0.0.${Math.floor(Math.random() * 254) + 1}`;
+
+export interface PositionTestFixture {
+  faculty: { id: string; code: string; name: string };
+  studyProgram: { id: string; code: string; name: string; facultyId: string };
+  user: { id: string; loginId: string; email: string | null };
+  userRole: { id: string };
+  facultyPosition: {
+    id: string;
+    name: string;
+    scopeType: string;
+    isSingleSeat: boolean;
+  };
+  studyProgramPosition: {
+    id: string;
+    name: string;
+    scopeType: string;
+    isSingleSeat: boolean;
+  };
+  multiSeatPosition: {
+    id: string;
+    name: string;
+    scopeType: string;
+    isSingleSeat: boolean;
+  };
+}
+
+export async function createPositionTestFixture(): Promise<PositionTestFixture> {
+  const faculty = await prisma.faculty.create({
+    data: { code: `FK${Date.now()}`, name: "Fakultas Teknik" },
+  });
+
+  const studyProgram = await prisma.studyProgram.create({
+    data: {
+      facultyId: faculty.id,
+      code: `TI${Date.now()}`,
+      name: "Teknik Informatika",
+    },
+  });
+
+  const userRole = await prisma.role.create({
+    data: { name: `PositionTestRole${Date.now()}` },
+  });
+
+  const user = await prisma.user.create({
+    data: {
+      loginId: `test-user-${Date.now()}`,
+      email: `test-user-${Date.now()}@test.com`,
+      password: "hashed",
+      roleId: userRole.id,
+    },
+  });
+
+  const facultyPosition = await prisma.position.create({
+    data: {
+      name: `DEKAN${Date.now()}`,
+      scopeType: "FACULTY",
+      isSingleSeat: true,
+    },
+  });
+
+  const studyProgramPosition = await prisma.position.create({
+    data: {
+      name: `KAPRODI${Date.now()}`,
+      scopeType: "STUDY_PROGRAM",
+      isSingleSeat: true,
+    },
+  });
+
+  const multiSeatPosition = await prisma.position.create({
+    data: {
+      name: `DOSEN${Date.now()}`,
+      scopeType: "STUDY_PROGRAM",
+      isSingleSeat: false,
+    },
+  });
+
+  return {
+    faculty,
+    studyProgram,
+    user,
+    userRole,
+    facultyPosition,
+    studyProgramPosition,
+    multiSeatPosition,
+  };
+}
+
+export async function createPositionAssignment(params: {
+  userId: string;
+  positionId: string;
+  facultyId?: string;
+  studyProgramId?: string;
+  startDate: string | Date;
+  endDate?: string | Date | null;
+  isActive?: boolean;
+}) {
+  const {
+    userId,
+    positionId,
+    facultyId,
+    studyProgramId,
+    startDate,
+    endDate,
+    isActive = true,
+  } = params;
+
+  return prisma.positionAssignment.create({
+    data: {
+      userId,
+      positionId,
+      facultyId: facultyId || null,
+      studyProgramId: studyProgramId || null,
+      startDate:
+        typeof startDate === "string" ? new Date(startDate) : startDate,
+      endDate: endDate
+        ? typeof endDate === "string"
+          ? new Date(endDate)
+          : endDate
+        : null,
+      isActive,
+    },
+  });
+}
+
+export async function createSuperAdminUser() {
+  const superAdminRole = await prisma.role.upsert({
+    where: { name: "SuperAdmin" },
+    update: {},
+    create: { name: "SuperAdmin", description: "Super Administrator" },
+  });
+
+  const plainPassword = "password123";
+  const hashedPassword = await Bun.password.hash(plainPassword);
+
+  const user = await prisma.user.create({
+    data: {
+      loginId: "superadmin",
+      email: "superadmin@test.com",
+      password: hashedPassword,
+      roleId: superAdminRole.id,
+    },
+  });
+
+  return { user, role: superAdminRole, plainPassword };
+}
+
+export async function createAuthenticatedSuperAdmin() {
+  const { user, role, plainPassword } = await createSuperAdminUser();
+
+  const loginRes = await app.handle(
+    new Request("http://localhost/auth/login", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": randomIp(),
+      },
+      body: JSON.stringify({
+        email: user.email,
+        password: plainPassword,
+      }),
+    }),
+  );
+
+  const body = await loginRes.json();
+  const token = body.data?.access_token;
+
+  return {
+    user,
+    role,
+    token,
+    authHeaders: {
+      Authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+  };
+}

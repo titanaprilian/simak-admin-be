@@ -6,6 +6,7 @@ import type {
 } from "./schema";
 import type { Logger } from "pino";
 import { RecordNotFoundError, UniqueConstraintError } from "@/libs/exceptions";
+import { FacultyHasRelatedRecordsError } from "./error";
 
 function handlePrismaError(error: unknown, log: Logger): never {
   const prismaError = error as {
@@ -172,6 +173,19 @@ export const FacultyService = {
     log.debug({ facultyId: id }, "Deleting faculty");
 
     try {
+      const [assignmentCount, programCount] = await Promise.all([
+        prisma.positionAssignment.count({ where: { facultyId: id } }),
+        prisma.studyProgram.count({ where: { facultyId: id } }),
+      ]);
+
+      if (assignmentCount > 0 || programCount > 0) {
+        log.warn(
+          { facultyId: id, assignmentCount, programCount },
+          "Cannot delete faculty with related records",
+        );
+        throw new FacultyHasRelatedRecordsError();
+      }
+
       const faculty = await prisma.faculty.delete({
         where: { id },
       });

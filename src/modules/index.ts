@@ -6,3 +6,4 @@ export { dashboard } from "./dashboard";
 export { faculty } from "./faculty";
 export { studyProgram } from "./studyProgram";
 export { lecturer } from "./lecturer";
+export { position } from "./position";

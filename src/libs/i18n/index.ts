@@ -26,6 +26,16 @@ import {
   es as dashboardEs,
   id as dashboardId,
 } from "@/modules/dashboard/locales";
+import {
+  en as positionEn,
+  es as positionEs,
+  id as positionId,
+} from "@/modules/position/locales";
+import {
+  en as facultyEn,
+  es as facultyEs,
+  id as facultyId,
+} from "@/modules/faculty/locales";
 
 const en = {
   common: commonEn,
@@ -35,6 +45,8 @@ const en = {
   rbac: rbacEn,
   health: healthEn,
   dashboard: dashboardEn,
+  position: positionEn,
+  faculty: facultyEn,
 };
 
 const es = {
@@ -45,6 +57,8 @@ const es = {
   rbac: rbacEs,
   health: healthEs,
   dashboard: dashboardEs,
+  position: positionEs,
+  faculty: facultyEs,
 };
 
 const id = {
@@ -55,6 +69,8 @@ const id = {
   rbac: rbacId,
   health: healthId,
   dashboard: dashboardId,
+  position: positionId,
+  faculty: facultyId,
 };
 
 const locales: Record<string, typeof en> = {

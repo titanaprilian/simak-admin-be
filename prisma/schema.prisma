@@ -18,18 +18,19 @@ generator prismabox {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  loginId       String         @unique
-  email         String?        @unique
+  id            String               @id @default(cuid())
+  loginId       String               @unique
+  email         String?              @unique
   password      String
-  isActive      Boolean        @default(true)
-  tokenVersion  Int            @default(0)
+  isActive      Boolean              @default(true)
+  tokenVersion  Int                  @default(0)
   roleId        String
-  role          Role           @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  role          Role                 @relation(fields: [roleId], references: [id], onDelete: Restrict)
   refreshTokens RefreshToken[]
   lecturer      Lecturer?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  positions     PositionAssignment[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 }
 
 model RefreshToken {
@@ -43,23 +44,25 @@ model RefreshToken {
 }
 
 model Faculty {
-  id        String         @id @default(cuid())
-  code      String         @unique
+  id        String               @id @default(cuid())
+  code      String               @unique
   name      String
   programs  StudyProgram[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  positions PositionAssignment[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
 }
 
 model StudyProgram {
-  id        String     @id @default(cuid())
+  id        String               @id @default(cuid())
   facultyId String
-  faculty   Faculty    @relation(fields: [facultyId], references: [id], onDelete: Restrict)
-  code      String     @unique
+  faculty   Faculty              @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  code      String               @unique
   name      String
   lecturers Lecturer[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  positions PositionAssignment[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
 
   @@index([facultyId])
 }
@@ -116,4 +119,41 @@ model RoleFeature {
   canPrint  Boolean @default(false)
 
   @@unique([roleId, featureId])
+}
+
+enum ScopeType {
+  FACULTY
+  STUDY_PROGRAM
+}
+
+model Position {
+  id           String               @id @default(cuid())
+  name         String               @unique
+  scopeType    ScopeType
+  isSingleSeat Boolean              @default(false)
+  assignments  PositionAssignment[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model PositionAssignment {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positionId     String
+  position       Position      @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  facultyId      String?
+  faculty        Faculty?      @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  studyProgramId String?
+  studyProgram   StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: Restrict)
+  startDate      DateTime      @db.Date
+  endDate        DateTime?     @db.Date
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([positionId])
+  @@index([facultyId])
+  @@index([studyProgramId])
 }
