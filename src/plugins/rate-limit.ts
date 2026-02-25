@@ -2,7 +2,8 @@ import { logger } from "@/libs/logger";
 import { errorResponse } from "@/libs/response";
 import { rateLimit } from "elysia-rate-limit";
 
-const getIp = (req: Request, server: any | null) => {
+const getIp = (req: Request | undefined, server: any | null) => {
+  if (!req) return "unknown";
   if (server && typeof server.requestIP === "function") {
     const socketAddress = server.requestIP(req);
     if (socketAddress?.address) return socketAddress.address;
@@ -19,12 +20,19 @@ export const globalRateLimit = rateLimit({
   max: 60,
   // We cast 'as any' because the library types mistakenly say this can't be a function
   errorResponse: ((arg1: any, arg2: any) => {
-    const context = arg2 || arg1;
-    const request = (
-      arg1 instanceof Request ? arg1 : context?.request
-    ) as Request;
+    let request: Request | undefined;
+    let set: any;
 
-    const set = context?.set;
+    if (arg1 instanceof Request) {
+      request = arg1;
+      set = arg2?.set;
+    } else if (arg2) {
+      request = arg2.request;
+      set = arg2.set;
+    } else if (arg1) {
+      request = arg1.request;
+      set = arg1.set;
+    }
 
     const ip = getIp(request, null);
 
@@ -69,12 +77,19 @@ export const authRateLimit = rateLimit({
   duration: 60000,
   max: 10,
   errorResponse: ((arg1: any, arg2: any) => {
-    const context = arg2 || arg1;
-    const request = (
-      arg1 instanceof Request ? arg1 : context?.request
-    ) as Request;
+    let request: Request | undefined;
+    let set: any;
 
-    const set = context?.set;
+    if (arg1 instanceof Request) {
+      request = arg1;
+      set = arg2?.set;
+    } else if (arg2) {
+      request = arg2.request;
+      set = arg2.set;
+    } else if (arg1) {
+      request = arg1.request;
+      set = arg1.set;
+    }
 
     logger.warn({ endpoint: request?.url }, "🚨 Auth Rate Limit Exceeded");
 

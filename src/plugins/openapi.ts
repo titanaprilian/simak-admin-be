@@ -43,7 +43,7 @@ A production-ready academic management system with Role-Based Access Control (RB
 ### Security
 - Password hashing with bcrypt
 - HttpOnly cookies for refresh tokens
-- Rate limiting on auth endpoints
+- Rate limiting on all endpoints, stricter for auth endpoints (just 10 request per ip per minute)
 - Protected system roles/features
 
 ⚠️ This documentation is disabled in production.
