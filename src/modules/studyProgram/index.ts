@@ -26,7 +26,7 @@ const FEATURE_NAME = "studyProgram_management";
  * - STUDY_PROGRAM scope: User can only manage that specific study program (limited rights)
  *
  * Permission Rules:
- * - CREATE: RBAC create permission (studyProgram_management:create)
+ * - CREATE: RBAC create permission + FACULTY scope on target faculty
  * - READ: RBAC permission is enough
  * - UPDATE:
  *   - SuperAdmin OR FACULTY scope on current faculty
@@ -45,7 +45,7 @@ const hasStudyProgramScopedPermission = (action: PermissionAction) => {
       user: { id: string };
       params?: { id?: string };
       body?: { facultyId?: string };
-      set: unknown;
+      set: any;
       locale: string;
     };
 
@@ -96,8 +96,32 @@ const hasStudyProgramScopedPermission = (action: PermissionAction) => {
       return Boolean(assignment);
     };
 
-    // CREATE: RBAC permission is enough (handled by permissionGuard above)
-    // No additional scope check needed for create
+    // CREATE: Must have FACULTY scope on target faculty
+    if (action === "create") {
+      const targetFacultyId = context.body?.facultyId;
+      if (!targetFacultyId) {
+        return errorResponse(
+          set,
+          403,
+          { key: "common.forbidden" },
+          null,
+          locale,
+        );
+      }
+
+      const allowed = await hasFacultyScope(targetFacultyId);
+      if (!allowed) {
+        return errorResponse(
+          set,
+          403,
+          { key: "common.forbidden" },
+          null,
+          locale,
+        );
+      }
+
+      return;
+    }
 
     // DELETE: SuperAdmin OR faculty scope on parent faculty
     if (action === "delete") {

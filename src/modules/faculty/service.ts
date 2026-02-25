@@ -1,4 +1,5 @@
 import { prisma } from "@/libs/prisma";
+import type { Prisma } from "@generated/prisma";
 import type {
   CreateFacultyInput,
   UpdateFacultyInput,
@@ -37,11 +38,17 @@ function handlePrismaError(error: unknown, log: Logger): never {
 export const FacultyService = {
   getAll: async (params: FacultyQuery, log: Logger) => {
     log.debug(
-      { page: params.page, limit: params.limit, search: params.search },
+      {
+        page: params.page,
+        limit: params.limit,
+        search: params.search,
+        sortBy: params.sortBy,
+        sortOrder: params.sortOrder,
+      },
       "Fetching faculties list",
     );
 
-    const { page, limit, search } = params;
+    const { page, limit, search, sortBy, sortOrder } = params;
     const where = search
       ? {
           OR: [
@@ -52,13 +59,19 @@ export const FacultyService = {
       : {};
 
     const skip = (page - 1) * limit;
+    const orderBy: Prisma.FacultyOrderByWithRelationInput =
+      sortBy === "name"
+        ? { name: sortOrder }
+        : sortBy === "createdAt"
+          ? { createdAt: sortOrder }
+          : { code: sortOrder };
 
     const [faculties, total] = await prisma.$transaction([
       prisma.faculty.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy,
       }),
       prisma.faculty.count({ where }),
     ]);
@@ -97,6 +110,7 @@ export const FacultyService = {
               id: true,
               code: true,
               name: true,
+              description: true,
             },
             orderBy: { name: "asc" },
           },
@@ -203,5 +217,53 @@ export const FacultyService = {
     } catch (error) {
       handlePrismaError(error, log);
     }
+  },
+
+  getOptions: async (
+    params: { page: number; limit: number; search?: string },
+    log: Logger,
+  ) => {
+    log.debug(
+      { page: params.page, limit: params.limit, search: params.search },
+      "Fetching faculty options",
+    );
+
+    const { page, limit, search } = params;
+    const where: Prisma.FacultyWhereInput = {};
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" as const } },
+        { code: { contains: search, mode: "insensitive" as const } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [faculties, total] = await prisma.$transaction([
+      prisma.faculty.findMany({
+        where,
+        select: { id: true, name: true, code: true },
+        skip,
+        take: limit,
+        orderBy: { name: "asc" },
+      }),
+      prisma.faculty.count({ where }),
+    ]);
+
+    log.info(
+      { count: faculties.length, total },
+      "Faculty options retrieved successfully",
+    );
+
+    return {
+      faculties,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   },
 };

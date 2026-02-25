@@ -36,6 +36,11 @@ import {
   es as facultyEs,
   id as facultyId,
 } from "@/modules/faculty/locales";
+import {
+  en as studyProgramEn,
+  es as studyProgramEs,
+  id as studyProgramId,
+} from "@/modules/studyProgram/locales";
 
 const en = {
   common: commonEn,
@@ -47,6 +52,7 @@ const en = {
   dashboard: dashboardEn,
   position: positionEn,
   faculty: facultyEn,
+  studyProgram: studyProgramEn,
 };
 
 const es = {
@@ -59,6 +65,7 @@ const es = {
   dashboard: dashboardEs,
   position: positionEs,
   faculty: facultyEs,
+  studyProgram: studyProgramEs,
 };
 
 const id = {
@@ -71,6 +78,7 @@ const id = {
   dashboard: dashboardId,
   position: positionId,
   faculty: facultyId,
+  studyProgram: studyProgramId,
 };
 
 const locales: Record<string, typeof en> = {

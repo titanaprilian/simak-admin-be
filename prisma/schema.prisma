@@ -44,25 +44,27 @@ model RefreshToken {
 }
 
 model Faculty {
-  id        String               @id @default(cuid())
-  code      String               @unique
-  name      String
-  programs  StudyProgram[]
-  positions PositionAssignment[]
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
+  id          String               @id @default(cuid())
+  code        String               @unique
+  name        String
+  description String?
+  programs    StudyProgram[]
+  positions   PositionAssignment[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 }
 
 model StudyProgram {
-  id        String               @id @default(cuid())
-  facultyId String
-  faculty   Faculty              @relation(fields: [facultyId], references: [id], onDelete: Restrict)
-  code      String               @unique
-  name      String
-  lecturers Lecturer[]
-  positions PositionAssignment[]
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
+  id          String               @id @default(cuid())
+  facultyId   String
+  faculty     Faculty              @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  code        String               @unique
+  name        String
+  description String?
+  lecturers   Lecturer[]
+  positions   PositionAssignment[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 
   @@index([facultyId])
 }

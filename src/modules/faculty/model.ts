@@ -9,8 +9,15 @@ export const FacultySafe = z.object({
   id: z.string(),
   code: z.string(),
   name: z.string(),
+  description: z.string().optional().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+});
+
+export const FacultyOption = z.object({
+  id: z.string(),
+  name: z.string(),
+  code: z.string(),
 });
 
 export const FacultyWithRelations = FacultySafe.extend({
@@ -29,6 +36,7 @@ export const FacultyModel = {
   create: createResponseSchema(FacultySafe),
   update: createResponseSchema(FacultySafe),
   delete: createResponseSchema(z.null()),
+  getOptions: createPaginatedResponseSchema(z.array(FacultyOption)),
   error: createErrorSchema(z.null()),
   validationError: createErrorSchema(
     z.array(
@@ -46,4 +54,5 @@ export type FacultyModelType = {
   create: z.infer<typeof FacultyModel.create>;
   update: z.infer<typeof FacultyModel.update>;
   delete: z.infer<typeof FacultyModel.delete>;
+  getOptions: z.infer<typeof FacultyModel.getOptions>;
 };

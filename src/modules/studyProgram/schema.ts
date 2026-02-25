@@ -4,12 +4,14 @@ export const CreateStudyProgramSchema = z.object({
   facultyId: z.string(),
   code: z.string().min(1).max(20),
   name: z.string().min(1).max(255),
+  description: z.string().optional(),
 });
 
 export const UpdateStudyProgramSchema = z.object({
   facultyId: z.string().optional(),
   code: z.string().min(1).max(20).optional(),
   name: z.string().min(1).max(255).optional(),
+  description: z.string().optional(),
 });
 
 export const StudyProgramQuerySchema = z.object({
@@ -17,6 +19,8 @@ export const StudyProgramQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
   facultyId: z.string().optional(),
+  sortBy: z.enum(["code", "name", "createdAt"]).default("name"),
+  sortOrder: z.enum(["asc", "desc"]).default("asc"),
 });
 
 export const StudyProgramParamsSchema = z.object({

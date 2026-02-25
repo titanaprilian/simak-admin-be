@@ -10,6 +10,7 @@ export const StudyProgramSafe = z.object({
   facultyId: z.string(),
   code: z.string(),
   name: z.string(),
+  description: z.string().optional().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

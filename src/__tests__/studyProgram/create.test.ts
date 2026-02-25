@@ -67,7 +67,7 @@ describe("POST /study-programs", () => {
     expect(res.status).toBe(403);
   });
 
-  it("should create study program successfully", async () => {
+  it("should create study program successfully with faculty-scoped position", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "studyProgram_management", action: "create" },
     ]);

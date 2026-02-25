@@ -5,6 +5,7 @@ import {
   UpdateFacultySchema,
   FacultyQuerySchema,
   FacultyParamsSchema,
+  FacultyOptionsQuerySchema,
 } from "./schema";
 import { errorResponse, successResponse } from "@/libs/response";
 import { createBaseApp, createProtectedApp } from "@/libs/base";
@@ -171,6 +172,37 @@ const protectedFaculty = createProtectedApp()
       beforeHandle: hasFacultyScopedPermission("read"),
       response: {
         200: FacultyModel.list,
+        400: FacultyModel.validationError,
+        500: FacultyModel.error,
+      },
+    },
+  )
+  .get(
+    "/options",
+    async ({ query, set, log, locale }) => {
+      const { page, limit, search } = query;
+      const { faculties, pagination } = await FacultyService.getOptions(
+        {
+          page: Number(page) || 1,
+          limit: Number(limit) || 10,
+          search: search as string | undefined,
+        },
+        log,
+      );
+      return successResponse(
+        set,
+        faculties,
+        { key: "faculty.optionsSuccess" },
+        200,
+        { pagination },
+        locale,
+      );
+    },
+    {
+      beforeHandle: hasFacultyScopedPermission("read"),
+      query: FacultyOptionsQuerySchema,
+      response: {
+        200: FacultyModel.getOptions,
         400: FacultyModel.validationError,
         500: FacultyModel.error,
       },

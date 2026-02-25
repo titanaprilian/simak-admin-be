@@ -1,4 +1,5 @@
 import { prisma } from "@/libs/prisma";
+import type { Prisma } from "@generated/prisma";
 import type {
   CreateStudyProgramInput,
   UpdateStudyProgramInput,
@@ -15,12 +16,14 @@ export const StudyProgramService = {
         limit: params.limit,
         search: params.search,
         facultyId: params.facultyId,
+        sortBy: params.sortBy,
+        sortOrder: params.sortOrder,
       },
       "Fetching study programs list",
     );
 
-    const { page, limit, search, facultyId } = params;
-    const where: any = {};
+    const { page, limit, search, facultyId, sortBy, sortOrder } = params;
+    const where: Prisma.StudyProgramWhereInput = {};
 
     if (search) {
       where.OR = [
@@ -34,13 +37,19 @@ export const StudyProgramService = {
     }
 
     const skip = (page - 1) * limit;
+    const orderBy: Prisma.StudyProgramOrderByWithRelationInput =
+      sortBy === "code"
+        ? { code: sortOrder }
+        : sortBy === "createdAt"
+          ? { createdAt: sortOrder }
+          : { name: sortOrder };
 
     const [programs, total] = await prisma.$transaction([
       prisma.studyProgram.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy,
         include: {
           faculty: {
             select: {

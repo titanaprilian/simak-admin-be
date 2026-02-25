@@ -4,6 +4,7 @@ export const es = {
   createSuccess: "Facultad creada exitosamente",
   updateSuccess: "Facultad actualizada exitosamente",
   deleteSuccess: "Facultad eliminada exitosamente",
+  optionsSuccess: "Opciones de facultad recuperadas exitosamente",
   notFound: "Facultad no encontrada",
   forbiddenRole:
     "El rol {{roleName}} no puede realizar esta acción sobre la facultad",
