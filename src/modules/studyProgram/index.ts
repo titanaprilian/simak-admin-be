@@ -5,6 +5,7 @@ import {
   UpdateStudyProgramSchema,
   StudyProgramQuerySchema,
   StudyProgramParamsSchema,
+  StudyProgramOptionsQuerySchema,
 } from "./schema";
 import { errorResponse, successResponse } from "@/libs/response";
 import { createBaseApp, createProtectedApp } from "@/libs/base";
@@ -256,6 +257,39 @@ const protectedStudyProgram = createProtectedApp()
       query: StudyProgramQuerySchema,
       response: {
         200: StudyProgramModel.list,
+        400: StudyProgramModel.validationError,
+        500: StudyProgramModel.error,
+      },
+    },
+  )
+  .get(
+    "/options",
+    async ({ query, set, log, locale }) => {
+      const { page, limit, search, facultyId } = query;
+      const { studyPrograms, pagination } =
+        await StudyProgramService.getOptions(
+          {
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+            search: search as string | undefined,
+            facultyId: facultyId as string | undefined,
+          },
+          log,
+        );
+      return successResponse(
+        set,
+        studyPrograms,
+        { key: "studyProgram.optionsSuccess" },
+        200,
+        { pagination },
+        locale,
+      );
+    },
+    {
+      beforeHandle: hasStudyProgramScopedPermission("read"),
+      query: StudyProgramOptionsQuerySchema,
+      response: {
+        200: StudyProgramModel.getOptions,
         400: StudyProgramModel.validationError,
         500: StudyProgramModel.error,
       },

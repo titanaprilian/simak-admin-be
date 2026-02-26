@@ -8,6 +8,10 @@ const FEATURES = [
   { name: "user_management", description: "Manage system users" },
   { name: "RBAC_management", description: "Manage roles and permissions" },
   { name: "position_management", description: "Manage positions and scopes" },
+  { name: "lecturer_management", description: "Manage lecturers" },
+  { name: "studyProgram_management", description: "Manage study programs" },
+  { name: "faculty_management", description: "Manage faculties" },
+  { name: "student_management", description: "Manage students" },
 ] as const;
 
 const ROLES = [
@@ -30,10 +34,13 @@ const ROLE_PERMISSIONS: Record<
   >
 > = {
   SuperAdmin: {
-    // SuperAdmin gets everything (we will handle this logically in the loop, or explicit here)
     user_management: { c: true, r: true, u: true, d: true, p: true },
     RBAC_management: { c: true, r: true, u: true, d: true, p: true },
     position_management: { c: true, r: true, u: true, d: true, p: true },
+    lecturer_management: { c: true, r: true, u: true, d: true, p: true },
+    studyProgram_management: { c: true, r: true, u: true, d: true, p: true },
+    faculty_management: { c: true, r: true, u: true, d: true, p: true },
+    student_management: { c: true, r: true, u: true, d: true, p: true },
   },
 };
 

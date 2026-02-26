@@ -7,10 +7,9 @@ import {
   createTestRoleWithPermissions,
   randomIp,
   resetDatabase,
-  createTestUser,
 } from "../test_utils";
 
-describe("POST /lecturers", () => {
+describe("POST /user-lecturers", () => {
   beforeEach(async () => {
     await resetDatabase();
   });
@@ -21,15 +20,19 @@ describe("POST /lecturers", () => {
 
   it("should return 401 if not logged in", async () => {
     const payload = {
-      userId: "test",
-      nik: "123456",
+      loginId: "dosen123",
+      email: "dosen@test.com",
+      password: "password123",
+      roleId: "test-role-id",
+      isActive: true,
+      nidn: "123456",
       fullName: "Dr. Budi",
       gender: "MALE",
       studyProgramId: "test",
     };
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -44,21 +47,26 @@ describe("POST /lecturers", () => {
 
   it("should return 403 if user has no create permission", async () => {
     const { authHeaders } = await createAuthenticatedUser();
-    const { user, program } = await createLecturerTestFixture();
+    const { program } = await createLecturerTestFixture();
 
     const payload = {
-      userId: user.id,
-      nik: "123456",
+      loginId: "dosen123",
+      email: "dosen@test.com",
+      password: "password123",
+      roleId: "test-role-id",
+      isActive: true,
+      nidn: "123456",
       fullName: "Dr. Budi",
       gender: "MALE",
       studyProgramId: program.id,
     };
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         method: "POST",
         headers: {
           ...authHeaders,
+          "content-type": "application/json",
           "x-forwarded-for": randomIp(),
         },
         body: JSON.stringify(payload),
@@ -68,30 +76,35 @@ describe("POST /lecturers", () => {
     expect(res.status).toBe(403);
   });
 
-  it("should create lecturer successfully", async () => {
+  it("should create user and lecturer successfully", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "lecturer_management", action: "create" },
     ]);
 
     const { program } = await createLecturerTestFixture();
-    const user = await createTestUser({
-      id: "test-new-user-id",
-      email: "testnewuserid@example.com",
+    const role = await prisma.role.findFirst({
+      where: { name: "LecturerRole" },
     });
 
     const payload = {
-      userId: user.id,
+      loginId: "dosen123",
+      email: "dosen123@test.com",
+      password: "password123",
+      roleId: role!.id,
+      isActive: true,
+      nidn: "123456",
       fullName: "Dr. Budi",
       gender: "MALE",
       studyProgramId: program.id,
     };
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         method: "POST",
         headers: {
           ...authHeaders,
+          "content-type": "application/json",
           "x-forwarded-for": randomIp(),
         },
         body: JSON.stringify(payload),
@@ -102,28 +115,37 @@ describe("POST /lecturers", () => {
 
     expect(res.status).toBe(201);
     expect(body.data.fullName).toBe("Dr. Budi");
+    expect(body.data.user).toBeDefined();
+    expect(body.data.user.loginId).toBe("dosen123");
   });
 
-  it("should return 400 if userId is missing", async () => {
+  it("should return 400 if loginId is missing", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "lecturer_management", action: "create" },
     ]);
 
     const { program } = await createLecturerTestFixture();
+    const role = await prisma.role.findFirst({
+      where: { name: "LecturerRole" },
+    });
 
     const payload = {
-      nik: "123456",
+      email: "dosen@test.com",
+      password: "password123",
+      roleId: role!.id,
+      nidn: "123456",
       fullName: "Dr. Budi",
       gender: "MALE",
       studyProgramId: program.id,
     };
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         method: "POST",
         headers: {
           ...authHeaders,
+          "content-type": "application/json",
           "x-forwarded-for": randomIp(),
         },
         body: JSON.stringify(payload),
@@ -133,26 +155,33 @@ describe("POST /lecturers", () => {
     expect(res.status).toBe(400);
   });
 
-  it("should return 400 if nik is missing", async () => {
+  it("should return 400 if password is missing", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "lecturer_management", action: "create" },
     ]);
 
-    const { user, program } = await createLecturerTestFixture();
+    const { program } = await createLecturerTestFixture();
+    const role = await prisma.role.findFirst({
+      where: { name: "LecturerRole" },
+    });
 
     const payload = {
-      userId: user.id,
+      loginId: "dosen123",
+      email: "dosen@test.com",
+      roleId: role!.id,
+      nidn: "123456",
       fullName: "Dr. Budi",
       gender: "MALE",
       studyProgramId: program.id,
     };
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         method: "POST",
         headers: {
           ...authHeaders,
+          "content-type": "application/json",
           "x-forwarded-for": randomIp(),
         },
         body: JSON.stringify(payload),
@@ -168,21 +197,28 @@ describe("POST /lecturers", () => {
       { featureName: "lecturer_management", action: "create" },
     ]);
 
-    const { user, program } = await createLecturerTestFixture();
+    const { program } = await createLecturerTestFixture();
+    const role = await prisma.role.findFirst({
+      where: { name: "LecturerRole" },
+    });
 
     const payload = {
-      userId: user.id,
-      nik: "123456",
+      loginId: "dosen123",
+      email: "dosen@test.com",
+      password: "password123",
+      roleId: role!.id,
+      nidn: "123456",
       fullName: "Dr. Budi",
       gender: "INVALID",
       studyProgramId: program.id,
     };
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         method: "POST",
         headers: {
           ...authHeaders,
+          "content-type": "application/json",
           "x-forwarded-for": randomIp(),
         },
         body: JSON.stringify(payload),
@@ -192,7 +228,7 @@ describe("POST /lecturers", () => {
     expect(res.status).toBe(400);
   });
 
-  it("should return 400 if user does not exist", async () => {
+  it("should return 400 if role does not exist", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "lecturer_management", action: "create" },
@@ -201,18 +237,22 @@ describe("POST /lecturers", () => {
     const { program } = await createLecturerTestFixture();
 
     const payload = {
-      userId: "non-existent-id",
-      nik: "123456",
+      loginId: "dosen123",
+      email: "dosen@test.com",
+      password: "password123",
+      roleId: "non-existent-role-id",
+      nidn: "123456",
       fullName: "Dr. Budi",
       gender: "MALE",
       studyProgramId: program.id,
     };
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         method: "POST",
         headers: {
           ...authHeaders,
+          "content-type": "application/json",
           "x-forwarded-for": randomIp(),
         },
         body: JSON.stringify(payload),
@@ -228,51 +268,28 @@ describe("POST /lecturers", () => {
       { featureName: "lecturer_management", action: "create" },
     ]);
 
-    const { user } = await createLecturerTestFixture();
+    const { program } = await createLecturerTestFixture();
+    const role = await prisma.role.findFirst({
+      where: { name: "LecturerRole" },
+    });
 
     const payload = {
-      userId: user.id,
-      nik: "123456",
+      loginId: "dosen123",
+      email: "dosen@test.com",
+      password: "password123",
+      roleId: role!.id,
+      nidn: "123456",
       fullName: "Dr. Budi",
       gender: "MALE",
-      studyProgramId: "non-existent-id",
+      studyProgramId: "non-existent-program-id",
     };
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         method: "POST",
         headers: {
           ...authHeaders,
-          "x-forwarded-for": randomIp(),
-        },
-        body: JSON.stringify(payload),
-      }),
-    );
-
-    expect(res.status).toBe(400);
-  });
-
-  it("should return 400 if user already has lecturer profile", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
-      { featureName: "lecturer_management", action: "create" },
-    ]);
-
-    const { user, program } = await createLecturerTestFixture();
-
-    const payload = {
-      userId: user.id,
-      nik: "999999",
-      fullName: "Dr. Siapa",
-      gender: "MALE",
-      studyProgramId: program.id,
-    };
-
-    const res = await app.handle(
-      new Request("http://localhost/lecturers", {
-        method: "POST",
-        headers: {
-          ...authHeaders,
+          "content-type": "application/json",
           "x-forwarded-for": randomIp(),
         },
         body: JSON.stringify(payload),

@@ -4,6 +4,7 @@ export const es = {
   deleteSuccess: "Usuario eliminado exitosamente",
   getSuccess: "Usuario obtenido exitosamente",
   listSuccess: "Usuarios obtenidos exitosamente",
+  optionsSuccess: "Opciones de usuario recuperadas exitosamente",
   userNotFound: "Usuario no encontrado",
   deleteSelf: "No puedes eliminar tu propia cuenta",
   createSystemAdmin: "No puedes crear otro usuario con rol SuperAdmin",

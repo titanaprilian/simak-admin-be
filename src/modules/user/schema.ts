@@ -34,6 +34,10 @@ export const GetUsersQuerySchema = PaginationSchema.extend({
     .optional(),
 });
 
+export const GetUsersOptionsQuerySchema = PaginationSchema.extend({
+  search: z.string().optional(),
+});
+
 /**
  * Inferred types
  */

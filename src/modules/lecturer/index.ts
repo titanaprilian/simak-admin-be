@@ -1,15 +1,15 @@
 import { LecturerService } from "./service";
 import { LecturerModel } from "./model";
 import {
-  CreateLecturerSchema,
-  UpdateLecturerSchema,
+  CreateUserLecturerSchema,
+  UpdateUserLecturerSchema,
   LecturerQuerySchema,
   LecturerParamsSchema,
 } from "./schema";
 import { errorResponse, successResponse } from "@/libs/response";
 import { createBaseApp, createProtectedApp } from "@/libs/base";
 import { hasPermission } from "@/middleware/permission";
-import { LecturerNotFoundError, UserAlreadyHasLecturerError } from "./error";
+import { RecordNotFoundError } from "@/libs/exceptions";
 
 const FEATURE_NAME = "lecturer_management";
 
@@ -66,10 +66,10 @@ const protectedLecturer = createProtectedApp()
   .post(
     "/",
     async ({ body, set, log, locale }) => {
-      const lecturer = await LecturerService.create(body, log);
+      const result = await LecturerService.createWithUser(body, log);
       return successResponse(
         set,
-        lecturer,
+        result,
         { key: "lecturer.createSuccess" },
         201,
         undefined,
@@ -78,7 +78,7 @@ const protectedLecturer = createProtectedApp()
     },
     {
       beforeHandle: hasPermission(FEATURE_NAME, "create"),
-      body: CreateLecturerSchema,
+      body: CreateUserLecturerSchema,
       response: {
         201: LecturerModel.create,
         400: LecturerModel.validationError,
@@ -90,10 +90,10 @@ const protectedLecturer = createProtectedApp()
   .patch(
     "/:id",
     async ({ params, body, set, log, locale }) => {
-      const lecturer = await LecturerService.update(params.id, body, log);
+      const result = await LecturerService.updateWithUser(params.id, body, log);
       return successResponse(
         set,
-        lecturer,
+        result,
         { key: "lecturer.updateSuccess" },
         200,
         undefined,
@@ -103,7 +103,7 @@ const protectedLecturer = createProtectedApp()
     {
       beforeHandle: hasPermission(FEATURE_NAME, "update"),
       params: LecturerParamsSchema,
-      body: UpdateLecturerSchema,
+      body: UpdateUserLecturerSchema,
       response: {
         200: LecturerModel.update,
         400: LecturerModel.validationError,
@@ -138,28 +138,12 @@ const protectedLecturer = createProtectedApp()
   );
 
 export const lecturer = createBaseApp({ tags: ["Lecturer"] }).group(
-  "/lecturers",
+  "/user-lecturers",
   (app) =>
     app
       .onError(({ error, set, locale }) => {
-        if (error instanceof UserAlreadyHasLecturerError) {
-          return errorResponse(
-            set,
-            400,
-            { key: "lecturer.userAlreadyHasLecturer" },
-            null,
-            locale,
-          );
-        }
-
-        if (error instanceof LecturerNotFoundError) {
-          return errorResponse(
-            set,
-            400,
-            { key: "lecturer.lecturerNotFound" },
-            null,
-            locale,
-          );
+        if (error instanceof RecordNotFoundError) {
+          return errorResponse(set, 404, { key: error.key }, null, locale);
         }
       })
       .use(protectedLecturer),

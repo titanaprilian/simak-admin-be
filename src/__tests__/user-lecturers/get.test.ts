@@ -9,7 +9,7 @@ import {
   resetDatabase,
 } from "../test_utils";
 
-describe("GET /lecturers/:id", () => {
+describe("GET /user-lecturers/:id", () => {
   beforeEach(async () => {
     await resetDatabase();
   });
@@ -20,7 +20,7 @@ describe("GET /lecturers/:id", () => {
 
   it("should return 401 if not logged in", async () => {
     const res = await app.handle(
-      new Request("http://localhost/lecturers/some-id", {
+      new Request("http://localhost/user-lecturers/some-id", {
         headers: { "x-forwarded-for": randomIp() },
       }),
     );
@@ -32,7 +32,7 @@ describe("GET /lecturers/:id", () => {
     const { authHeaders } = await createAuthenticatedUser();
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers/some-id", {
+      new Request("http://localhost/user-lecturers/some-id", {
         headers: authHeaders,
       }),
     );
@@ -49,7 +49,7 @@ describe("GET /lecturers/:id", () => {
     const { lecturer } = await createLecturerTestFixture();
 
     const res = await app.handle(
-      new Request(`http://localhost/lecturers/${lecturer.id}`, {
+      new Request(`http://localhost/user-lecturers/${lecturer.id}`, {
         headers: authHeaders,
       }),
     );
@@ -68,7 +68,7 @@ describe("GET /lecturers/:id", () => {
     ]);
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers/non-existent-id", {
+      new Request("http://localhost/user-lecturers/non-existent-id", {
         headers: authHeaders,
       }),
     );
@@ -85,7 +85,7 @@ describe("GET /lecturers/:id", () => {
     const { lecturer } = await createLecturerTestFixture();
 
     const res = await app.handle(
-      new Request(`http://localhost/lecturers/${lecturer.id}`, {
+      new Request(`http://localhost/user-lecturers/${lecturer.id}`, {
         headers: authHeaders,
       }),
     );

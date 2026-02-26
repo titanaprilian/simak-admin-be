@@ -4,6 +4,7 @@ export const id = {
   deleteSuccess: "Pengguna berhasil dihapus",
   getSuccess: "Pengguna berhasil diambil",
   listSuccess: "Pengguna berhasil diambil",
+  optionsSuccess: "Opsi pengguna berhasil diambil",
   userNotFound: "Pengguna tidak ditemukan",
   deleteSelf: "Anda tidak dapat menghapus akun Anda sendiri",
   createSystemAdmin:

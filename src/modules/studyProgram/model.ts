@@ -15,6 +15,12 @@ export const StudyProgramSafe = z.object({
   updatedAt: z.string().datetime(),
 });
 
+export const StudyProgramOption = z.object({
+  id: z.string(),
+  name: z.string(),
+  code: z.string(),
+});
+
 export const StudyProgramWithRelations = StudyProgramSafe.extend({
   faculty: z.object({
     id: z.string(),
@@ -35,6 +41,7 @@ export const StudyProgramModel = {
   create: createResponseSchema(StudyProgramSafe),
   update: createResponseSchema(StudyProgramSafe),
   delete: createResponseSchema(z.null()),
+  getOptions: createPaginatedResponseSchema(z.array(StudyProgramOption)),
   error: createErrorSchema(z.null()),
   validationError: createErrorSchema(
     z.array(
@@ -52,4 +59,5 @@ export type StudyProgramModelType = {
   create: z.infer<typeof StudyProgramModel.create>;
   update: z.infer<typeof StudyProgramModel.update>;
   delete: z.infer<typeof StudyProgramModel.delete>;
+  getOptions: z.infer<typeof StudyProgramModel.getOptions>;
 };

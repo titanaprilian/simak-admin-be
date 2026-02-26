@@ -9,7 +9,7 @@ import {
   resetDatabase,
 } from "../test_utils";
 
-describe("GET /lecturers", () => {
+describe("GET /user-lecturers", () => {
   beforeEach(async () => {
     await resetDatabase();
   });
@@ -20,7 +20,7 @@ describe("GET /lecturers", () => {
 
   it("should return 401 if not logged in", async () => {
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         headers: { "x-forwarded-for": randomIp() },
       }),
     );
@@ -32,7 +32,7 @@ describe("GET /lecturers", () => {
     const { authHeaders } = await createAuthenticatedUser();
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         headers: authHeaders,
       }),
     );
@@ -47,7 +47,7 @@ describe("GET /lecturers", () => {
     ]);
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         headers: authHeaders,
       }),
     );
@@ -67,7 +67,7 @@ describe("GET /lecturers", () => {
     await createLecturerListTestFixtures(5);
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers?page=1&limit=2", {
+      new Request("http://localhost/user-lecturers?page=1&limit=2", {
         headers: authHeaders,
       }),
     );
@@ -135,9 +135,12 @@ describe("GET /lecturers", () => {
     });
 
     const res = await app.handle(
-      new Request(`http://localhost/lecturers?studyProgramId=${program1.id}`, {
-        headers: authHeaders,
-      }),
+      new Request(
+        `http://localhost/user-lecturers?studyProgramId=${program1.id}`,
+        {
+          headers: authHeaders,
+        },
+      ),
     );
 
     const body = await res.json();
@@ -155,7 +158,7 @@ describe("GET /lecturers", () => {
     await createLecturerListTestFixtures(2);
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers?search=budi", {
+      new Request("http://localhost/user-lecturers?search=budi", {
         headers: authHeaders,
       }),
     );
@@ -176,7 +179,7 @@ describe("GET /lecturers", () => {
     await createLecturerListTestFixtures(1);
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers", {
+      new Request("http://localhost/user-lecturers", {
         headers: authHeaders,
       }),
     );

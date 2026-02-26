@@ -3,6 +3,7 @@ import { UserModel } from "./model";
 import {
   CreateUserSchema,
   GetUsersQuerySchema,
+  GetUsersOptionsQuerySchema,
   UpdateUserSchema,
   UserParamSchema,
 } from "./schema";
@@ -47,6 +48,36 @@ const protectedUser = createProtectedApp()
       beforeHandle: hasPermission(FEATURE_NAME, "read"),
       response: {
         200: UserModel.users,
+        500: UserModel.error,
+      },
+    },
+  )
+  .get(
+    "/options",
+    async ({ query, set, log, locale }) => {
+      const { page = 1, limit = 10, search } = query;
+      const { users, pagination } = await UserService.getOptions(
+        {
+          page,
+          limit,
+          search,
+        },
+        log,
+      );
+      return successResponse(
+        set,
+        users,
+        { key: "user.optionsSuccess" },
+        200,
+        { pagination },
+        locale,
+      );
+    },
+    {
+      query: GetUsersOptionsQuerySchema,
+      beforeHandle: hasPermission(FEATURE_NAME, "read"),
+      response: {
+        200: UserModel.getOptions,
         500: UserModel.error,
       },
     },

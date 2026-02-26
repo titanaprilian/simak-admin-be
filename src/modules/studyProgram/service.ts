@@ -199,4 +199,66 @@ export const StudyProgramService = {
       handlePrismaError(error, log);
     }
   },
+
+  getOptions: async (
+    params: {
+      page: number;
+      limit: number;
+      search?: string;
+      facultyId?: string;
+    },
+    log: Logger,
+  ) => {
+    log.debug(
+      {
+        page: params.page,
+        limit: params.limit,
+        search: params.search,
+        facultyId: params.facultyId,
+      },
+      "Fetching study program options",
+    );
+
+    const { page, limit, search, facultyId } = params;
+    const where: Prisma.StudyProgramWhereInput = {};
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { code: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    if (facultyId) {
+      where.facultyId = facultyId;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [programs, total] = await prisma.$transaction([
+      prisma.studyProgram.findMany({
+        where,
+        select: { id: true, name: true, code: true },
+        skip,
+        take: limit,
+        orderBy: { name: "asc" },
+      }),
+      prisma.studyProgram.count({ where }),
+    ]);
+
+    log.info(
+      { count: programs.length, total },
+      "Study program options retrieved successfully",
+    );
+
+    return {
+      studyPrograms: programs,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  },
 };

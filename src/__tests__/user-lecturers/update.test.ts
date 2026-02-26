@@ -9,7 +9,7 @@ import {
   resetDatabase,
 } from "../test_utils";
 
-describe("DELETE /lecturers/:id", () => {
+describe("PATCH /user-lecturers/:id", () => {
   beforeEach(async () => {
     await resetDatabase();
   });
@@ -20,103 +20,103 @@ describe("DELETE /lecturers/:id", () => {
 
   it("should return 401 if not logged in", async () => {
     const res = await app.handle(
-      new Request("http://localhost/lecturers/some-id", {
-        method: "DELETE",
+      new Request("http://localhost/user-lecturers/some-id", {
+        method: "PATCH",
         headers: {
+          "content-type": "application/json",
           "x-forwarded-for": randomIp(),
         },
+        body: JSON.stringify({ fullName: "New Name" }),
       }),
     );
 
     expect(res.status).toBe(401);
   });
 
-  it("should return 403 if user has no delete permission", async () => {
+  it("should return 403 if user has no update permission", async () => {
     const { authHeaders } = await createAuthenticatedUser();
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers/some-id", {
-        method: "DELETE",
+      new Request("http://localhost/user-lecturers/some-id", {
+        method: "PATCH",
         headers: {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
+        body: JSON.stringify({ fullName: "New Name" }),
       }),
     );
 
     expect(res.status).toBe(403);
   });
 
-  it("should delete lecturer successfully", async () => {
+  it("should update lecturer successfully", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
-      { featureName: "lecturer_management", action: "delete" },
+      { featureName: "lecturer_management", action: "update" },
     ]);
 
     const { lecturer } = await createLecturerTestFixture();
 
     const res = await app.handle(
-      new Request(`http://localhost/lecturers/${lecturer.id}`, {
-        method: "DELETE",
+      new Request(`http://localhost/user-lecturers/${lecturer.id}`, {
+        method: "PATCH",
         headers: {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
+        body: JSON.stringify({ fullName: "Dr. Budi Santoso" }),
       }),
     );
 
+    const body = await res.json();
+
     expect(res.status).toBe(200);
-
-    const deleted = await prisma.lecturer.findUnique({
-      where: { id: lecturer.id },
-    });
-
-    expect(deleted).toBeNull();
+    expect(body.data.fullName).toBe("Dr. Budi Santoso");
   });
 
   it("should return 404 if lecturer not found", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
-      { featureName: "lecturer_management", action: "delete" },
+      { featureName: "lecturer_management", action: "update" },
     ]);
 
     const res = await app.handle(
-      new Request("http://localhost/lecturers/non-existent-id", {
-        method: "DELETE",
+      new Request("http://localhost/user-lecturers/non-existent-id", {
+        method: "PATCH",
         headers: {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
+        body: JSON.stringify({ fullName: "New Name" }),
       }),
     );
 
     expect(res.status).toBe(404);
   });
 
-  it("should keep user after deleting lecturer", async () => {
+  it("should update gender field", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
-      { featureName: "lecturer_management", action: "delete" },
+      { featureName: "lecturer_management", action: "update" },
     ]);
 
-    const { lecturer, user } = await createLecturerTestFixture();
+    const { lecturer } = await createLecturerTestFixture();
 
     const res = await app.handle(
-      new Request(`http://localhost/lecturers/${lecturer.id}`, {
-        method: "DELETE",
+      new Request(`http://localhost/user-lecturers/${lecturer.id}`, {
+        method: "PATCH",
         headers: {
           ...authHeaders,
           "x-forwarded-for": randomIp(),
         },
+        body: JSON.stringify({ gender: "FEMALE" }),
       }),
     );
 
+    const body = await res.json();
+
     expect(res.status).toBe(200);
-
-    const userStillExists = await prisma.user.findUnique({
-      where: { id: user.id },
-    });
-
-    expect(userStillExists).not.toBeNull();
+    expect(body.data.gender).toBe("FEMALE");
   });
 });

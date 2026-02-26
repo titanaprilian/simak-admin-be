@@ -28,6 +28,7 @@ model User {
   role          Role                 @relation(fields: [roleId], references: [id], onDelete: Restrict)
   refreshTokens RefreshToken[]
   lecturer      Lecturer?
+  student       Student?
   positions     PositionAssignment[]
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
@@ -62,11 +63,53 @@ model StudyProgram {
   name        String
   description String?
   lecturers   Lecturer[]
+  students    Student[]
   positions   PositionAssignment[]
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
 
   @@index([facultyId])
+}
+
+enum StatusMhs {
+  tidak_aktif
+  belum_program
+  belum_daftar_ulang
+  sudah_program
+}
+
+enum JenisMhs {
+  reguler
+  reguler_transfer
+}
+
+enum Gender {
+  male
+  female
+}
+
+model Student {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  generation     Int
+  gender         Gender
+  yearOfEntry    Int          @map("year_of_entry")
+  birthYear      Int          @map("birth_year")
+  address        String?
+  statusMhs      StatusMhs    @default(belum_program)
+  kelas          String?
+  jenis          JenisMhs     @default(reguler)
+  cityBirth      String?      @map("city_birth")
+  phoneNumber    String?      @map("phone_number")
+  semester       Int          @default(1)
+  studyProgramId String
+  studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id], onDelete: Restrict)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([studyProgramId])
 }
 
 model Lecturer {

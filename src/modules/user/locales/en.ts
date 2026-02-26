@@ -4,6 +4,7 @@ export const en = {
   deleteSuccess: "User Successfully Deleted",
   getSuccess: "User details retrieved",
   listSuccess: "Users retrieved successfully",
+  optionsSuccess: "User options retrieved successfully",
   userNotFound: "User Not Found",
   deleteSelf: "Operation Forbidden: You cannot delete your own account",
   createSystemAdmin:

@@ -1,20 +1,32 @@
 import { z } from "zod";
 
-export const CreateLecturerSchema = z.object({
-  userId: z.string(),
+export const CreateUserLecturerSchema = z.object({
+  loginId: z.string().min(8),
+  email: z.email().optional(),
+  password: z.string().min(8),
+  roleId: z.string(),
+  isActive: z.boolean().default(true),
   nidn: z.string().max(50).optional(),
   fullName: z.string().min(1).max(255),
   gender: z.enum(["MALE", "FEMALE"]),
   studyProgramId: z.string(),
 });
 
-export const UpdateLecturerSchema = z.object({
-  userId: z.string().optional(),
-  nidn: z.string().max(50).optional(),
-  fullName: z.string().min(1).max(255).optional(),
-  gender: z.enum(["MALE", "FEMALE"]).optional(),
-  studyProgramId: z.string().optional(),
-});
+export const UpdateUserLecturerSchema = z
+  .object({
+    loginId: z.string().min(8).optional(),
+    email: z.email().optional(),
+    password: z.string().min(8).optional(),
+    roleId: z.string().optional(),
+    isActive: z.boolean().optional(),
+    nidn: z.string().max(50).optional(),
+    fullName: z.string().min(1).max(255).optional(),
+    gender: z.enum(["MALE", "FEMALE"]).optional(),
+    studyProgramId: z.string().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided for update",
+  });
 
 export const LecturerQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -27,7 +39,7 @@ export const LecturerParamsSchema = z.object({
   id: z.string(),
 });
 
-export type CreateLecturerInput = z.infer<typeof CreateLecturerSchema>;
-export type UpdateLecturerInput = z.infer<typeof UpdateLecturerSchema>;
+export type CreateUserLecturerInput = z.infer<typeof CreateUserLecturerSchema>;
+export type UpdateUserLecturerInput = z.infer<typeof UpdateUserLecturerSchema>;
 export type LecturerQuery = z.infer<typeof LecturerQuerySchema>;
 export type LecturerParams = z.infer<typeof LecturerParamsSchema>;

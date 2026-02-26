@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PaginationSchema } from "@/libs/response";
 
 export const CreateStudyProgramSchema = z.object({
   facultyId: z.string(),
@@ -23,6 +24,11 @@ export const StudyProgramQuerySchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 });
 
+export const StudyProgramOptionsQuerySchema = PaginationSchema.extend({
+  search: z.string().optional(),
+  facultyId: z.string().optional(),
+});
+
 export const StudyProgramParamsSchema = z.object({
   id: z.string(),
 });
@@ -31,3 +37,6 @@ export type CreateStudyProgramInput = z.infer<typeof CreateStudyProgramSchema>;
 export type UpdateStudyProgramInput = z.infer<typeof UpdateStudyProgramSchema>;
 export type StudyProgramQuery = z.infer<typeof StudyProgramQuerySchema>;
 export type StudyProgramParams = z.infer<typeof StudyProgramParamsSchema>;
+export type StudyProgramOptionsQuery = z.infer<
+  typeof StudyProgramOptionsQuerySchema
+>;

@@ -16,6 +16,12 @@ export const UserSafe = z.object({
   updatedAt: z.string().datetime(),
 });
 
+export const UserOption = z.object({
+  id: z.string(),
+  loginId: z.string(),
+  email: z.email().nullable(),
+});
+
 export const UserModel = {
   user: createResponseSchema(
     UserSafe.extend({
@@ -31,6 +37,7 @@ export const UserModel = {
   ),
   createResult: createResponseSchema(UserSafe),
   deleteResult: createResponseSchema(UserSafe),
+  getOptions: createPaginatedResponseSchema(z.array(UserOption)),
 
   error: createErrorSchema(z.null()),
   validationError: createErrorSchema(

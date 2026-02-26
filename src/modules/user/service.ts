@@ -300,4 +300,56 @@ export abstract class UserService {
       handlePrismaError(error, log);
     }
   }
+
+  static async getOptions(
+    params: {
+      page: number;
+      limit: number;
+      search?: string;
+    },
+    log: Logger,
+  ) {
+    log.debug(
+      { page: params.page, limit: params.limit, search: params.search },
+      "Fetching user options",
+    );
+
+    const { page, limit, search } = params;
+    const where: Prisma.UserWhereInput = {};
+
+    if (search) {
+      where.OR = [
+        { loginId: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await prisma.$transaction([
+      prisma.user.findMany({
+        where,
+        select: { id: true, loginId: true, email: true },
+        skip,
+        take: limit,
+        orderBy: { loginId: "asc" },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    log.info(
+      { count: users.length, total },
+      "User options retrieved successfully",
+    );
+
+    return {
+      users,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 }

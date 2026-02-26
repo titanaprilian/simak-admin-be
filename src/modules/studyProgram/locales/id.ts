@@ -4,5 +4,6 @@ export const id = {
   createSuccess: "Program studi berhasil dibuat",
   updateSuccess: "Program studi berhasil diperbarui",
   deleteSuccess: "Program studi berhasil dihapus",
+  optionsSuccess: "Opsi program studi berhasil diambil",
   notFound: "Program studi tidak ditemukan",
 };
