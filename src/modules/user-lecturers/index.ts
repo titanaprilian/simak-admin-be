@@ -137,7 +137,7 @@ const protectedLecturer = createProtectedApp()
     },
   );
 
-export const lecturer = createBaseApp({ tags: ["Lecturer"] }).group(
+export const userLecturers = createBaseApp({ tags: ["Lecturer"] }).group(
   "/user-lecturers",
   (app) =>
     app

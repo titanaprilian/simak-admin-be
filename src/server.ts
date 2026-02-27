@@ -10,8 +10,9 @@ import {
   dashboard,
   faculty,
   studyProgram,
-  lecturer,
+  userLecturers,
   userStudents,
+  userPositions,
   position,
 } from "./modules";
 import { prisma } from "./libs/prisma";
@@ -71,8 +72,9 @@ export const app = new Elysia()
   .use(dashboard)
   .use(faculty)
   .use(studyProgram)
-  .use(lecturer)
+  .use(userLecturers)
   .use(userStudents)
+  .use(userPositions)
   .use(position)
   .use(globalErrorHandler)
   .listen(port);
