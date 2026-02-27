@@ -3,72 +3,187 @@ generator client {
   output   = "../generated/prisma"
 }
 
+generator prismabox {
+  provider                    = "prismabox"
+  output                      = "../generated/prismabox"
+  binaryTargets               = ["native", "debian-openssl-3.0.x"]
+  inputModel                  = "true"
+  typeboxImportDependencyName = "elysia"
+  typeboxImportVariableName   = "t"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator prismabox {
-  provider                    = "prismabox"
-  typeboxImportDependencyName = "elysia"
-  typeboxImportVariableName   = "t"
-  inputModel                  = true
-  output                      = "../generated/prismabox"
-  binaryTargets               = ["native", "debian-openssl-3.0.x"]
-}
-
 model User {
   id            String               @id @default(cuid())
-  loginId       String               @unique
   email         String?              @unique
   password      String
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
   isActive      Boolean              @default(true)
   tokenVersion  Int                  @default(0)
   roleId        String
-  role          Role                 @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  refreshTokens RefreshToken[]
+  loginId       String               @unique
   lecturer      Lecturer?
-  student       Student?
   positions     PositionAssignment[]
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  refreshTokens RefreshToken[]
+  student       Student?
+  role          Role                 @relation(fields: [roleId], references: [id])
 }
 
 model RefreshToken {
   id        String   @id @default(cuid())
   token     String   @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   revoked   Boolean  @default(false)
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Faculty {
   id          String               @id @default(cuid())
   code        String               @unique
   name        String
-  description String?
-  programs    StudyProgram[]
-  positions   PositionAssignment[]
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
+  description String?
+  positions   PositionAssignment[]
+  programs    StudyProgram[]
 }
 
 model StudyProgram {
   id          String               @id @default(cuid())
   facultyId   String
-  faculty     Faculty              @relation(fields: [facultyId], references: [id], onDelete: Restrict)
   code        String               @unique
   name        String
-  description String?
-  lecturers   Lecturer[]
-  students    Student[]
-  positions   PositionAssignment[]
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
+  description String?
+  lecturers   Lecturer[]
+  positions   PositionAssignment[]
+  students    Student[]
+  faculty     Faculty              @relation(fields: [facultyId], references: [id])
 
   @@index([facultyId])
+}
+
+model Student {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  name           String
+  generation     Int
+  gender         Gender
+  yearOfEntry    Int          @map("year_of_entry")
+  birthYear      Int          @map("birth_year")
+  address        String?
+  statusMhs      StatusMhs    @default(belum_program)
+  kelas          String?
+  jenis          JenisMhs     @default(reguler)
+  cityBirth      String?      @map("city_birth")
+  phoneNumber    String?      @map("phone_number")
+  semester       Int          @default(1)
+  studyProgramId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id])
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([studyProgramId])
+}
+
+model Lecturer {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  nidn           String?
+  fullName       String
+  gender         String
+  studyProgramId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id])
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([studyProgramId])
+}
+
+model Role {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  permissions RoleFeature[]
+  users       User[]
+}
+
+model Feature {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  roles       RoleFeature[]
+}
+
+model RoleFeature {
+  id        String  @id @default(cuid())
+  roleId    String
+  featureId String
+  canCreate Boolean @default(false)
+  canRead   Boolean @default(false)
+  canUpdate Boolean @default(false)
+  canDelete Boolean @default(false)
+  canPrint  Boolean @default(false)
+  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  role      Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, featureId])
+}
+
+model Position {
+  id           String               @id @default(cuid())
+  name         String               @unique
+  scopeType    ScopeType
+  isSingleSeat Boolean              @default(false)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  assignments  PositionAssignment[]
+}
+
+model PositionAssignment {
+  id             String        @id @default(cuid())
+  userId         String
+  positionId     String
+  facultyId      String?
+  studyProgramId String?
+  startDate      DateTime      @db.Date
+  endDate        DateTime?     @db.Date
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  faculty        Faculty?      @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  position       Position      @relation(fields: [positionId], references: [id])
+  studyProgram   StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: Restrict)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([positionId])
+  @@index([facultyId])
+  @@index([studyProgramId])
+}
+
+model EducationalProgram {
+  id        String   @id @default(cuid())
+  name      String
+  level     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, level])
 }
 
 enum StatusMhs {
@@ -88,117 +203,7 @@ enum Gender {
   female
 }
 
-model Student {
-  id             String       @id @default(cuid())
-  userId         String       @unique
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name           String
-  generation     Int
-  gender         Gender
-  yearOfEntry    Int          @map("year_of_entry")
-  birthYear      Int          @map("birth_year")
-  address        String?
-  statusMhs      StatusMhs    @default(belum_program)
-  kelas          String?
-  jenis          JenisMhs     @default(reguler)
-  cityBirth      String?      @map("city_birth")
-  phoneNumber    String?      @map("phone_number")
-  semester       Int          @default(1)
-  studyProgramId String
-  studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id], onDelete: Restrict)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([studyProgramId])
-}
-
-model Lecturer {
-  id             String       @id @default(cuid())
-  userId         String       @unique
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nidn           String?
-  fullName       String
-  gender         String
-  studyProgramId String
-  studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id], onDelete: Restrict)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([studyProgramId])
-}
-
-model Role {
-  id          String        @id @default(cuid())
-  name        String        @unique
-  description String?
-  users       User[]
-  permissions RoleFeature[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Feature {
-  id          String        @id @default(cuid())
-  name        String        @unique
-  description String?
-  roles       RoleFeature[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model RoleFeature {
-  id String @id @default(cuid())
-
-  roleId String
-  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  featureId String
-  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
-
-  canCreate Boolean @default(false)
-  canRead   Boolean @default(false)
-  canUpdate Boolean @default(false)
-  canDelete Boolean @default(false)
-  canPrint  Boolean @default(false)
-
-  @@unique([roleId, featureId])
-}
-
 enum ScopeType {
   FACULTY
   STUDY_PROGRAM
-}
-
-model Position {
-  id           String               @id @default(cuid())
-  name         String               @unique
-  scopeType    ScopeType
-  isSingleSeat Boolean              @default(false)
-  assignments  PositionAssignment[]
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-}
-
-model PositionAssignment {
-  id             String        @id @default(cuid())
-  userId         String
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  positionId     String
-  position       Position      @relation(fields: [positionId], references: [id], onDelete: Restrict)
-  facultyId      String?
-  faculty        Faculty?      @relation(fields: [facultyId], references: [id], onDelete: Restrict)
-  studyProgramId String?
-  studyProgram   StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: Restrict)
-  startDate      DateTime      @db.Date
-  endDate        DateTime?     @db.Date
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  @@index([userId])
-  @@index([positionId])
-  @@index([facultyId])
-  @@index([studyProgramId])
 }

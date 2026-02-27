@@ -14,6 +14,7 @@ import {
   userStudents,
   userPositions,
   position,
+  educationalProgram,
 } from "./modules";
 import { prisma } from "./libs/prisma";
 import { logger } from "./libs/logger";
@@ -76,6 +77,7 @@ export const app = new Elysia()
   .use(userStudents)
   .use(userPositions)
   .use(position)
+  .use(educationalProgram)
   .use(globalErrorHandler)
   .listen(port);
 
