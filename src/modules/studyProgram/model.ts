@@ -8,6 +8,7 @@ import {
 export const StudyProgramSafe = z.object({
   id: z.string(),
   facultyId: z.string(),
+  educationalProgramId: z.string(),
   code: z.string(),
   name: z.string(),
   description: z.string().optional().nullable(),
@@ -27,6 +28,13 @@ export const StudyProgramWithRelations = StudyProgramSafe.extend({
     code: z.string(),
     name: z.string(),
   }),
+  educationalProgram: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      level: z.string(),
+    })
+    .nullable(),
   lecturers: z.array(
     z.object({
       id: z.string(),

@@ -58,6 +58,13 @@ export const StudyProgramService = {
               name: true,
             },
           },
+          educationalProgram: {
+            select: {
+              id: true,
+              name: true,
+              level: true,
+            },
+          },
         },
       }),
       prisma.studyProgram.count({ where }),
@@ -97,6 +104,13 @@ export const StudyProgramService = {
               id: true,
               code: true,
               name: true,
+            },
+          },
+          educationalProgram: {
+            select: {
+              id: true,
+              name: true,
+              level: true,
             },
           },
           lecturers: {

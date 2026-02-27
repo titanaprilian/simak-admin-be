@@ -65,8 +65,17 @@ describe("DELETE /study-programs/:id", () => {
       positionName: "DEKAN",
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const program = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     const res = await app.handle(
@@ -98,8 +107,17 @@ describe("DELETE /study-programs/:id", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const program = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     const res = await app.handle(

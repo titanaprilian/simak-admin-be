@@ -50,8 +50,17 @@ describe("GET /study-programs/:id", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const program = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     const res = await app.handle(
@@ -65,6 +74,8 @@ describe("GET /study-programs/:id", () => {
     expect(res.status).toBe(200);
     expect(body.data.code).toBe("TI");
     expect(body.data.name).toBe("Teknik Informatika");
+    expect(body.data.educationalProgram.name).toBe("Sarjana (S1)");
+    expect(body.data.educationalProgram.level).toBe("S1");
   });
 
   it("should return 404 if study program not found", async () => {
@@ -92,11 +103,16 @@ describe("GET /study-programs/:id", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const program = await prisma.studyProgram.create({
       data: {
         facultyId: faculty.id,
         code: "TI",
         name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
       },
     });
 
@@ -125,8 +141,17 @@ describe("GET /study-programs/:id", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const program = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     await assignStudyProgramPosition({
@@ -156,12 +181,26 @@ describe("GET /study-programs/:id", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const ownedProgram = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "SI", name: "Sistem Informasi" },
+      data: {
+        facultyId: faculty.id,
+        code: "SI",
+        name: "Sistem Informasi",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     const targetProgram = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     await assignStudyProgramPosition({

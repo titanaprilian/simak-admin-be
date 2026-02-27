@@ -47,10 +47,15 @@ describe("POST /study-programs", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Teknik Informatika", level: "S1" },
+    });
+
     const payload = {
       facultyId: faculty.id,
       code: "TI",
       name: "Teknik Informatika",
+      educationalProgramId: educationalProgram.id,
     };
 
     const res = await app.handle(
@@ -79,6 +84,10 @@ describe("POST /study-programs", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Teknik Informatika", level: "S1" },
+    });
+
     await assignFacultyPosition({
       userId: user.id,
       facultyId: faculty.id,
@@ -87,6 +96,7 @@ describe("POST /study-programs", () => {
 
     const payload = {
       facultyId: faculty.id,
+      educationalProgramId: educationalProgram.id,
       code: "TI",
       name: "Teknik Informatika",
     };
@@ -107,10 +117,11 @@ describe("POST /study-programs", () => {
     expect(res.status).toBe(201);
     expect(body.data.code).toBe("TI");
     expect(body.data.name).toBe("Teknik Informatika");
+    expect(body.data.educationalProgramId).toBe(educationalProgram.id);
   });
 
   it("should create study program successfully with RBAC create permission", async () => {
-    const role = await createTestRoleWithPermissions("TestUser", [
+    const role = await createTestRoleWithPermissions("SuperAdmin", [
       { featureName: "studyProgram_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
@@ -119,10 +130,15 @@ describe("POST /study-programs", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const payload = {
       facultyId: faculty.id,
       code: "TI",
       name: "Teknik Informatika",
+      educationalProgramId: educationalProgram.id,
     };
 
     const res = await app.handle(
@@ -153,8 +169,17 @@ describe("POST /study-programs", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const studyProgram = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     await assignStudyProgramPosition({
@@ -167,6 +192,7 @@ describe("POST /study-programs", () => {
       facultyId: faculty.id,
       code: "SI",
       name: "Sistem Informasi",
+      educationalProgramId: educationalProgram.id,
     };
 
     const res = await app.handle(
@@ -305,14 +331,24 @@ describe("POST /study-programs", () => {
       positionName: "DEKAN",
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Existing Program" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Existing Program",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     const payload = {
       facultyId: faculty.id,
       code: "TI",
       name: "Teknik Informatika",
+      educationalProgramId: educationalProgram.id,
     };
 
     const res = await app.handle(

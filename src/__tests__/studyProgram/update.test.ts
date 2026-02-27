@@ -69,8 +69,17 @@ describe("PATCH /study-programs/:id", () => {
       positionName: "DEKAN",
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const program = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     const res = await app.handle(
@@ -100,8 +109,17 @@ describe("PATCH /study-programs/:id", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const program = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     const res = await app.handle(
@@ -156,10 +174,24 @@ describe("PATCH /study-programs/:id", () => {
       positionName: "DEKAN",
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     await prisma.studyProgram.createMany({
       data: [
-        { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
-        { facultyId: faculty.id, code: "SI", name: "Sistem Informasi" },
+        {
+          facultyId: faculty.id,
+          code: "TI",
+          name: "Teknik Informatika",
+          educationalProgramId: educationalProgram.id,
+        },
+        {
+          facultyId: faculty.id,
+          code: "SI",
+          name: "Sistem Informasi",
+          educationalProgramId: educationalProgram.id,
+        },
       ],
     });
 
@@ -193,8 +225,17 @@ describe("PATCH /study-programs/:id", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const program = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     await assignStudyProgramPosition({
@@ -229,12 +270,26 @@ describe("PATCH /study-programs/:id", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const ownedProgram = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "SI", name: "Sistem Informasi" },
+      data: {
+        facultyId: faculty.id,
+        code: "SI",
+        name: "Sistem Informasi",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     const targetProgram = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     await assignStudyProgramPosition({
@@ -279,11 +334,16 @@ describe("PATCH /study-programs/:id", () => {
       positionName: "DEKAN",
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     const targetProgram = await prisma.studyProgram.create({
       data: {
         facultyId: facultyWithoutScope.id,
         code: "TI",
         name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
       },
     });
 

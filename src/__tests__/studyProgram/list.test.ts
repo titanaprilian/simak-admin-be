@@ -67,11 +67,30 @@ describe("GET /study-programs", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     await prisma.studyProgram.createMany({
       data: [
-        { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
-        { facultyId: faculty.id, code: "SI", name: "Sistem Informasi" },
-        { facultyId: faculty.id, code: "TK", name: "Teknik Komputer" },
+        {
+          facultyId: faculty.id,
+          code: "TI",
+          name: "Teknik Informatika",
+          educationalProgramId: educationalProgram.id,
+        },
+        {
+          facultyId: faculty.id,
+          code: "SI",
+          name: "Sistem Informasi",
+          educationalProgramId: educationalProgram.id,
+        },
+        {
+          facultyId: faculty.id,
+          code: "TK",
+          name: "Teknik Komputer",
+          educationalProgramId: educationalProgram.id,
+        },
       ],
     });
 
@@ -86,6 +105,7 @@ describe("GET /study-programs", () => {
     expect(res.status).toBe(200);
     expect(body.data).toHaveLength(2);
     expect(body.pagination.total).toBe(3);
+    expect(body.data[0].educationalProgramId).toBe(educationalProgram.id);
   });
 
   it("should filter by facultyId", async () => {
@@ -102,10 +122,24 @@ describe("GET /study-programs", () => {
       data: { code: "FKM", name: "Fakultas Kedokteran" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     await prisma.studyProgram.createMany({
       data: [
-        { facultyId: faculty1.id, code: "TI", name: "Teknik Informatika" },
-        { facultyId: faculty2.id, code: "KD", name: "Kedokteran" },
+        {
+          facultyId: faculty1.id,
+          code: "TI",
+          name: "Teknik Informatika",
+          educationalProgramId: educationalProgram.id,
+        },
+        {
+          facultyId: faculty2.id,
+          code: "KD",
+          name: "Kedokteran",
+          educationalProgramId: educationalProgram.id,
+        },
       ],
     });
 
@@ -132,10 +166,24 @@ describe("GET /study-programs", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     await prisma.studyProgram.createMany({
       data: [
-        { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
-        { facultyId: faculty.id, code: "SI", name: "Sistem Informasi" },
+        {
+          facultyId: faculty.id,
+          code: "TI",
+          name: "Teknik Informatika",
+          educationalProgramId: educationalProgram.id,
+        },
+        {
+          facultyId: faculty.id,
+          code: "SI",
+          name: "Sistem Informasi",
+          educationalProgramId: educationalProgram.id,
+        },
       ],
     });
 
@@ -162,8 +210,17 @@ describe("GET /study-programs", () => {
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
     await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
     });
 
     const res = await app.handle(

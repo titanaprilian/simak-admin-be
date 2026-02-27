@@ -56,19 +56,22 @@ model Faculty {
 }
 
 model StudyProgram {
-  id          String               @id @default(cuid())
-  facultyId   String
-  code        String               @unique
-  name        String
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  description String?
-  lecturers   Lecturer[]
-  positions   PositionAssignment[]
-  students    Student[]
-  faculty     Faculty              @relation(fields: [facultyId], references: [id])
+  id                   String               @id @default(cuid())
+  facultyId            String
+  educationalProgramId String
+  code                 String               @unique
+  name                 String
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  description          String?
+  lecturers            Lecturer[]
+  positions            PositionAssignment[]
+  students             Student[]
+  faculty              Faculty              @relation(fields: [facultyId], references: [id])
+  educationalProgram   EducationalProgram   @relation(fields: [educationalProgramId], references: [id])
 
   @@index([facultyId])
+  @@index([educationalProgramId])
 }
 
 model Student {
@@ -177,11 +180,12 @@ model PositionAssignment {
 }
 
 model EducationalProgram {
-  id        String   @id @default(cuid())
-  name      String
-  level     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String         @id @default(cuid())
+  name          String
+  level         String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  studyPrograms StudyProgram[]
 
   @@unique([name, level])
 }

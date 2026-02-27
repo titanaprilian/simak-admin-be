@@ -3,6 +3,7 @@ import { PaginationSchema } from "@/libs/response";
 
 export const CreateStudyProgramSchema = z.object({
   facultyId: z.string(),
+  educationalProgramId: z.string(),
   code: z.string().min(1).max(20),
   name: z.string().min(1).max(255),
   description: z.string().optional(),
@@ -10,6 +11,7 @@ export const CreateStudyProgramSchema = z.object({
 
 export const UpdateStudyProgramSchema = z.object({
   facultyId: z.string().optional(),
+  educationalProgramId: z.string().optional(),
   code: z.string().min(1).max(20).optional(),
   name: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
