@@ -275,6 +275,21 @@ export const PositionService = {
     }
   },
 
+  async getPosition(id: string, log: Logger) {
+    log.debug({ positionId: id }, "Fetching position details");
+
+    try {
+      const position = await prisma.position.findUniqueOrThrow({
+        where: { id },
+      });
+
+      log.info({ positionId: id }, "Position retrieved successfully");
+      return toPositionResponse(position);
+    } catch (error) {
+      handlePrismaError(error, log);
+    }
+  },
+
   async getAssignments(params: GetAssignmentsQueryInput, log: Logger) {
     log.debug(params, "Fetching position assignments");
 

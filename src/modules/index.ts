@@ -5,6 +5,7 @@ export { rbac } from "./rbac";
 export { dashboard } from "./dashboard";
 export { faculty } from "./faculty";
 export { studyProgram } from "./studyProgram";
-export { lecturer } from "./lecturer";
+export { userLecturers } from "./user-lecturers/";
 export { userStudents } from "./user-students";
 export { position } from "./position";
+export { userPositions } from "./user-positions";

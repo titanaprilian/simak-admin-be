@@ -1,5 +1,6 @@
 export const es = {
   listSuccess: "Posiciones recuperadas exitosamente",
+  getSuccess: "Posición recuperada exitosamente",
   createSuccess: "Posición creada exitosamente",
   updateSuccess: "Posición actualizada exitosamente",
   deleteSuccess: "Posición eliminada exitosamente",

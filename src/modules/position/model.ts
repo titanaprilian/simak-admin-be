@@ -57,6 +57,7 @@ export const PositionModel = {
   createPosition: createResponseSchema(PositionSafe),
   updatePosition: createResponseSchema(PositionSafe),
   deletePosition: createResponseSchema(PositionSafe),
+  getPosition: createResponseSchema(PositionSafe),
 
   listAssignments: createPaginatedResponseSchema(
     z.array(PositionAssignmentSafe),

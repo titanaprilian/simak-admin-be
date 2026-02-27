@@ -48,6 +48,30 @@ const protectedPosition = createProtectedApp()
       },
     },
   )
+  .get(
+    "/:id",
+    async ({ params, set, log, locale }) => {
+      const position = await PositionService.getPosition(params.id, log);
+
+      return successResponse(
+        set,
+        position,
+        { key: "position.getSuccess" },
+        200,
+        undefined,
+        locale,
+      );
+    },
+    {
+      beforeHandle: hasPermission(FEATURE_NAME, "read"),
+      params: PositionParamsSchema,
+      response: {
+        200: PositionModel.getPosition,
+        400: PositionModel.validationError,
+        500: PositionModel.error,
+      },
+    },
+  )
   .post(
     "/",
     async ({ body, set, log, locale }) => {

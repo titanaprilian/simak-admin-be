@@ -1,5 +1,6 @@
 export const id = {
   listSuccess: "Posisi berhasil diambil",
+  getSuccess: "Posisi berhasil diambil",
   createSuccess: "Posisi berhasil dibuat",
   updateSuccess: "Posisi berhasil diperbarui",
   deleteSuccess: "Posisi berhasil dihapus",
