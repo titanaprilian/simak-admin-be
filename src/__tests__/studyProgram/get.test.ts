@@ -72,7 +72,7 @@ describe("GET /study-programs/:id", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.data.code).toBe("TI");
+    expect(body.data.code).toBe("FKTI");
     expect(body.data.name).toBe("Teknik Informatika");
     expect(body.data.educationalProgram.name).toBe("Sarjana (S1)");
     expect(body.data.educationalProgram.level).toBe("S1");

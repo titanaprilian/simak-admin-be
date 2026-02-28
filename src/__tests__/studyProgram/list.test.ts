@@ -153,7 +153,7 @@ describe("GET /study-programs", () => {
 
     expect(res.status).toBe(200);
     expect(body.data).toHaveLength(1);
-    expect(body.data[0].code).toBe("TI");
+    expect(body.data[0].code).toBe("FKTI");
   });
 
   it("should filter by search", async () => {

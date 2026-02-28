@@ -7,6 +7,11 @@ import type {
 } from "./schema";
 import type { Logger } from "pino";
 import { handlePrismaError } from "@/libs/exceptions";
+import { StudyProgramCodeExistsError, FacultyNotFoundError } from "./error";
+
+function computeFullCode(facultyCode: string, rawCode: string): string {
+  return facultyCode + rawCode;
+}
 
 export const StudyProgramService = {
   getAll: async (params: StudyProgramQuery, log: Logger) => {
@@ -75,14 +80,15 @@ export const StudyProgramService = {
       "Study programs retrieved successfully",
     );
 
-    const programsWithStringDates = programs.map((program) => ({
+    const programsWithFullCode = programs.map((program) => ({
       ...program,
+      code: computeFullCode(program.faculty.code, program.code),
       createdAt: program.createdAt.toISOString(),
       updatedAt: program.updatedAt.toISOString(),
     }));
 
     return {
-      studyPrograms: programsWithStringDates,
+      studyPrograms: programsWithFullCode,
       pagination: {
         total,
         page,
@@ -122,10 +128,12 @@ export const StudyProgramService = {
         },
       });
 
+      const fullCode = computeFullCode(program.faculty.code, program.code);
+
       log.info(
         {
           studyProgramId: id,
-          code: program.code,
+          code: fullCode,
           lecturerCount: program.lecturers.length,
         },
         "Study program details retrieved successfully",
@@ -133,6 +141,7 @@ export const StudyProgramService = {
 
       return {
         ...program,
+        code: fullCode,
         createdAt: program.createdAt.toISOString(),
         updatedAt: program.updatedAt.toISOString(),
       };
@@ -148,45 +157,154 @@ export const StudyProgramService = {
     );
 
     try {
+      const faculty = await prisma.faculty.findUnique({
+        where: { id: data.facultyId },
+        select: { id: true, code: true },
+      });
+
+      if (!faculty) {
+        throw new FacultyNotFoundError();
+      }
+
+      const existingProgram = await prisma.studyProgram.findFirst({
+        where: {
+          code: data.code,
+          facultyId: data.facultyId,
+        },
+        select: { id: true },
+      });
+
+      log.debug(
+        { code: data.code, facultyId: data.facultyId, existingProgram },
+        "Checking for existing program",
+      );
+
+      if (existingProgram) {
+        log.warn(
+          { code: data.code, facultyId: data.facultyId },
+          "Study program code already exists for this faculty",
+        );
+        throw new StudyProgramCodeExistsError();
+      }
+
+      const fullCode = computeFullCode(faculty.code, data.code);
+
+      log.debug(
+        { rawCode: data.code, facultyCode: faculty.code, fullCode },
+        "Computed full code for study program",
+      );
+
       const program = await prisma.studyProgram.create({
-        data,
+        data: {
+          facultyId: data.facultyId,
+          educationalProgramId: data.educationalProgramId,
+          code: data.code,
+          name: data.name,
+          description: data.description,
+        },
       });
 
       log.info(
-        { studyProgramId: program.id, code: program.code },
+        { studyProgramId: program.id, rawCode: program.code, fullCode },
         "Study program created successfully",
       );
 
       return {
         ...program,
+        code: fullCode,
         createdAt: program.createdAt.toISOString(),
         updatedAt: program.updatedAt.toISOString(),
       };
     } catch (error) {
+      if (error instanceof StudyProgramCodeExistsError) {
+        throw error;
+      }
       handlePrismaError(error, log);
     }
   },
 
   update: async (id: string, data: UpdateStudyProgramInput, log: Logger) => {
-    log.debug({ studyProgramId: id }, "Updating study program");
+    log.debug({ studyProgramId: id, data }, "Updating study program");
 
     try {
-      const program = await prisma.studyProgram.update({
+      const existingProgram = await prisma.studyProgram.findUnique({
         where: { id },
-        data,
+        select: { facultyId: true, code: true },
       });
 
+      if (!existingProgram) {
+        handlePrismaError(
+          { code: "P2025", meta: { modelName: "StudyProgram" } },
+          log,
+        );
+      }
+
+      const targetFacultyId = data.facultyId ?? existingProgram!.facultyId;
+
+      const faculty = await prisma.faculty.findUnique({
+        where: { id: targetFacultyId },
+        select: { id: true, code: true },
+      });
+
+      if (!faculty) {
+        throw new FacultyNotFoundError();
+      }
+
+      const updateData: Prisma.StudyProgramUpdateInput = { ...data };
+
+      if (data.code !== undefined) {
+        const existingWithNewCode = await prisma.studyProgram.findFirst({
+          where: {
+            code: data.code,
+            facultyId: targetFacultyId,
+            NOT: { id },
+          },
+          select: { id: true },
+        });
+
+        if (existingWithNewCode) {
+          log.warn(
+            { code: data.code, facultyId: targetFacultyId },
+            "Study program code already exists for this faculty",
+          );
+          throw new StudyProgramCodeExistsError();
+        }
+
+        log.debug(
+          {
+            oldCode: existingProgram!.code,
+            newCode: data.code,
+            facultyCode: faculty.code,
+          },
+          "Code changed, computing new full code",
+        );
+      }
+
+      const program = await prisma.studyProgram.update({
+        where: { id },
+        data: updateData,
+      });
+
+      const fullCode = computeFullCode(faculty.code, program.code);
+
       log.info(
-        { studyProgramId: id, code: program.code },
+        { studyProgramId: id, rawCode: program.code, fullCode },
         "Study program updated successfully",
       );
 
       return {
         ...program,
+        code: fullCode,
         createdAt: program.createdAt.toISOString(),
         updatedAt: program.updatedAt.toISOString(),
       };
     } catch (error) {
+      if (error instanceof StudyProgramCodeExistsError) {
+        throw error;
+      }
+      if (error instanceof FacultyNotFoundError) {
+        throw error;
+      }
       handlePrismaError(error, log);
     }
   },
@@ -252,7 +370,7 @@ export const StudyProgramService = {
     const [programs, total] = await prisma.$transaction([
       prisma.studyProgram.findMany({
         where,
-        select: { id: true, name: true, code: true },
+        select: { id: true, name: true, code: true, facultyId: true },
         skip,
         take: limit,
         orderBy: { name: "asc" },
@@ -260,13 +378,30 @@ export const StudyProgramService = {
       prisma.studyProgram.count({ where }),
     ]);
 
+    const facultyIds = [...new Set(programs.map((p) => p.facultyId))];
+    const faculties = await prisma.faculty.findMany({
+      where: { id: { in: facultyIds } },
+      select: { id: true, code: true },
+    });
+
+    const facultyCodeMap = new Map(faculties.map((f) => [f.id, f.code]));
+
+    const programsWithFullCode = programs.map((program) => ({
+      id: program.id,
+      name: program.name,
+      code: computeFullCode(
+        facultyCodeMap.get(program.facultyId)!,
+        program.code,
+      ),
+    }));
+
     log.info(
       { count: programs.length, total },
       "Study program options retrieved successfully",
     );
 
     return {
-      studyPrograms: programs,
+      studyPrograms: programsWithFullCode,
       pagination: {
         total,
         page,

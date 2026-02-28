@@ -59,7 +59,7 @@ model StudyProgram {
   id                   String               @id @default(cuid())
   facultyId            String
   educationalProgramId String
-  code                 String               @unique
+  code                 String
   name                 String
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -70,6 +70,7 @@ model StudyProgram {
   faculty              Faculty              @relation(fields: [facultyId], references: [id])
   educationalProgram   EducationalProgram   @relation(fields: [educationalProgramId], references: [id])
 
+  @@unique([code, facultyId])
   @@index([facultyId])
   @@index([educationalProgramId])
 }

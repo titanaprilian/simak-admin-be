@@ -11,6 +11,11 @@ import { errorResponse, successResponse } from "@/libs/response";
 import { createBaseApp, createProtectedApp } from "@/libs/base";
 import { hasPermission, type PermissionAction } from "@/middleware/permission";
 import { prisma } from "@/libs/prisma";
+import {
+  StudyProgramCodeExistsError,
+  StudyProgramNotFoundError,
+  FacultyNotFoundError,
+} from "./error";
 
 const FEATURE_NAME = "studyProgram_management";
 
@@ -394,5 +399,27 @@ const protectedStudyProgram = createProtectedApp()
 
 export const studyProgram = createBaseApp({ tags: ["Study Program"] }).group(
   "/study-programs",
-  (app) => app.use(protectedStudyProgram),
+  (app) =>
+    app
+      .onError(({ error, set, locale }) => {
+        if (error instanceof StudyProgramCodeExistsError) {
+          return errorResponse(set, 409, { key: error.key }, null, locale);
+        }
+        if (error instanceof StudyProgramNotFoundError) {
+          return errorResponse(set, 404, { key: error.key }, null, locale);
+        }
+        if (error instanceof FacultyNotFoundError) {
+          return errorResponse(
+            set,
+            400,
+            {
+              key: "common.invalidReference",
+              params: { fieldName: "facultyId" },
+            },
+            null,
+            locale,
+          );
+        }
+      })
+      .use(protectedStudyProgram),
 );

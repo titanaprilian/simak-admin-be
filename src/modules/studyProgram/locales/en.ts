@@ -6,4 +6,5 @@ export const en = {
   deleteSuccess: "Study program deleted successfully",
   optionsSuccess: "Study program options retrieved successfully",
   notFound: "Study program not found",
+  codeExists: "Code already exists for this faculty",
 };

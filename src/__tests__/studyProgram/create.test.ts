@@ -115,7 +115,7 @@ describe("POST /study-programs", () => {
     const body = await res.json();
 
     expect(res.status).toBe(201);
-    expect(body.data.code).toBe("TI");
+    expect(body.data.code).toBe("FKTI");
     expect(body.data.name).toBe("Teknik Informatika");
     expect(body.data.educationalProgramId).toBe(educationalProgram.id);
   });
@@ -154,7 +154,7 @@ describe("POST /study-programs", () => {
 
     const body = await res.json();
     expect(res.status).toBe(201);
-    expect(body.data.code).toBe("TI");
+    expect(body.data.code).toBe("FKTI");
   });
 
   it("should return 403 if user has study_program-scoped position but no create permission", async () => {
@@ -363,5 +363,55 @@ describe("POST /study-programs", () => {
     );
 
     expect(res.status).toBe(409);
+  });
+
+  it("should allow same code in different faculties", async () => {
+    const role = await createTestRoleWithPermissions("SuperAdmin", [
+      { featureName: "studyProgram_management", action: "create" },
+    ]);
+    const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
+
+    const faculty1 = await prisma.faculty.create({
+      data: { code: "FK", name: "Fakultas Teknik" },
+    });
+
+    const faculty2 = await prisma.faculty.create({
+      data: { code: "FH", name: "Fakultas Hukum" },
+    });
+
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana (S1)", level: "S1" },
+    });
+
+    await prisma.studyProgram.create({
+      data: {
+        facultyId: faculty1.id,
+        code: "TI",
+        name: "Teknik Informatika",
+        educationalProgramId: educationalProgram.id,
+      },
+    });
+
+    const payload = {
+      facultyId: faculty2.id,
+      code: "TI",
+      name: "Hukum",
+      educationalProgramId: educationalProgram.id,
+    };
+
+    const res = await app.handle(
+      new Request("http://localhost/study-programs", {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "x-forwarded-for": randomIp(),
+        },
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    const body = await res.json();
+    expect(res.status).toBe(201);
+    expect(body.data.code).toBe("FHTI");
   });
 });
