@@ -139,6 +139,28 @@ async function main() {
     },
   });
 
+  // Seed Educational Program
+  await prisma.educationalProgram.createMany({
+    data: [
+      {
+        name: "SARJANA (S1)",
+        level: "S1",
+      },
+      {
+        name: "DIPLOMA II",
+        level: "D2",
+      },
+      {
+        name: "DIPLOMA III",
+        level: "D3",
+      },
+      {
+        name: "PASCASARJANA (S2)",
+        level: "S2",
+      },
+    ],
+  });
+
   console.log("✅ Seeding completed successfully!");
 }
 
