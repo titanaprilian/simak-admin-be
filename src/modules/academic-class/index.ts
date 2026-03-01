@@ -1,4 +1,5 @@
 import { AcademicClassService } from "./service";
+import { AcademicClassModel } from "./model";
 import {
   CreateAcademicClassSchema,
   GetAcademicClassesQuerySchema,
@@ -54,6 +55,10 @@ const protectedAcademicClass = createProtectedApp()
     {
       query: GetAcademicClassesQuerySchema,
       beforeHandle: hasPermission(FEATURE_NAME, "read"),
+      response: {
+        200: AcademicClassModel.academicClasses,
+        500: AcademicClassModel.error,
+      },
     },
   )
   .get(
@@ -76,6 +81,11 @@ const protectedAcademicClass = createProtectedApp()
     {
       params: AcademicClassParamSchema,
       beforeHandle: hasPermission(FEATURE_NAME, "read"),
+      response: {
+        200: AcademicClassModel.academicClass,
+        404: AcademicClassModel.error,
+        500: AcademicClassModel.error,
+      },
     },
   )
   .post(
@@ -98,6 +108,12 @@ const protectedAcademicClass = createProtectedApp()
     {
       body: CreateAcademicClassSchema,
       beforeHandle: hasPermission(FEATURE_NAME, "create"),
+      response: {
+        201: AcademicClassModel.createResult,
+        400: AcademicClassModel.validationError,
+        409: AcademicClassModel.error,
+        500: AcademicClassModel.error,
+      },
     },
   )
   .post(
@@ -116,6 +132,12 @@ const protectedAcademicClass = createProtectedApp()
     {
       body: BulkCreateAcademicClassSchema,
       beforeHandle: hasPermission(FEATURE_NAME, "create"),
+      response: {
+        201: AcademicClassModel.createResult,
+        400: AcademicClassModel.validationError,
+        409: AcademicClassModel.error,
+        500: AcademicClassModel.error,
+      },
     },
   )
   .patch(
@@ -140,6 +162,13 @@ const protectedAcademicClass = createProtectedApp()
       params: AcademicClassParamSchema,
       body: UpdateAcademicClassSchema,
       beforeHandle: hasPermission(FEATURE_NAME, "update"),
+      response: {
+        200: AcademicClassModel.updateResult,
+        400: AcademicClassModel.validationError,
+        404: AcademicClassModel.error,
+        409: AcademicClassModel.error,
+        500: AcademicClassModel.error,
+      },
     },
   )
   .delete(
@@ -158,10 +187,15 @@ const protectedAcademicClass = createProtectedApp()
     {
       params: AcademicClassParamSchema,
       beforeHandle: hasPermission(FEATURE_NAME, "delete"),
+      response: {
+        200: AcademicClassModel.deleteResult,
+        404: AcademicClassModel.error,
+        500: AcademicClassModel.error,
+      },
     },
   );
 
-export const academicClass = createBaseApp({ tags: ["AcademicClass"] }).group(
+export const academicClass = createBaseApp({ tags: ["Academic Class"] }).group(
   "/academic-classes",
   (app) =>
     app
