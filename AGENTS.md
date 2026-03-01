@@ -22,12 +22,12 @@ prisma migrate deploy          # Deploy migrations in prod
 prisma migrate reset           # Reset database (dev only)
 
 # Testing
-bun test                       # Run all tests
-bun test unit                  # Run only unit tests
+bun test                      # Run all tests
+bun test unit                 # Run only unit tests
 bun test integration          # Run only integration tests
-bun test auth/unit.test.ts     # Run single test file
-bun test auth                  # Run all auth tests
-dotenv -e .env.test -- prisma db push  # Setup test DB
+bun test auth/unit.test.ts    # Run single test file
+bun test auth                 # Run all auth tests
+bun test:setup                # Setup test DB
 
 # Linting & Formatting
 bun run lint                   # Run ESLint
@@ -66,10 +66,65 @@ bun run prepare                # Install Husky hooks
 
 ### Error Handling
 
-- Create custom error classes extending `Error` in `@/libs/exceptions`
-- Use `throw new AccountDisabledError()` or `throw new UnauthorizedError()`
-- Log with structured pino logger at appropriate levels (debug/warn/error)
-- Global error handler catches unhandled errors and returns 500 with safe message
+**Golden Rule: Never use `throw new Error()` in the service layer.**
+
+All errors must be custom error classes that:
+
+1. Extend the built-in `Error` class
+2. Include a `key` property for i18n translation
+3. Are registered in the module's `index.ts` using `.onError()`
+
+#### Creating Custom Errors
+
+Create errors in the module's `error.ts` file:
+
+```typescript
+// src/modules/[module]/error.ts
+import { t } from "@/libs/i18n";
+
+export class DeleteSystemError extends Error {
+  readonly key: string;
+
+  constructor(locale: string = "en") {
+    super(t(locale, "user.deleteSystem"));
+    this.key = "user.deleteSystem";
+  }
+}
+```
+
+#### Registering Error Handlers
+
+Register errors in the module's `index.ts`:
+
+```typescript
+export const user = createBaseApp({ tags: ["User"] }).group("/users", (app) =>
+  app
+    .onError(({ error, set, locale }) => {
+      if (error instanceof DeleteSystemError) {
+        return errorResponse(
+          set,
+          403,
+          { key: "user.deleteSystem" },
+          null,
+          locale,
+        );
+      }
+    })
+    .use(protectedUser),
+);
+```
+
+#### Common Errors
+
+Use common errors from `@/libs/exceptions.ts` for typical scenarios:
+
+- `AccountDisabledError` - When user account is disabled
+- `UnauthorizedError` - For authentication failures
+- `ForeignKeyError` - When foreign key constraint fails
+- `UniqueConstraintError` - When duplicate entry violates constraint
+- `RecordNotFoundError` - When record doesn't exist
+
+These are pre-registered in `createBaseApp` and `createProtectedApp`.
 
 ### Logging
 
@@ -212,17 +267,6 @@ return errorResponse(
 
 **Frontend:** Send `Accept-Language` header with requests (e.g., `es-ES`, `id-ID`, `en`)
 
-### 2. Create Module Structure
-
-Create `src/modules/products/` with:
-
-- `schema.ts` - Zod validation schemas for inputs/outputs
-- `model.ts` - TypeBox schemas for API documentation
-- `error.ts` - Custom error classes (optional)
-- `service.ts` - Business logic with logging
-- `index.ts` - Route handlers
-- `locales/` - i18n translations (optional)
-
 ## Feature Implementation Flow
 
 When implementing a new feature (e.g., new module for "products"), follow this workflow:
@@ -242,7 +286,7 @@ Create `src/modules/products/` with:
 
 - `schema.ts` - Zod validation schemas for inputs/outputs
 - `model.ts` - TypeBox schemas for API documentation
-- `error.ts` - Custom error classes (optional)
+- `error.ts` - Custom error classes (required)
 - `service.ts` - Business logic with logging
 - `index.ts` - Route handlers
 - `locales/` - i18n translations (optional)
@@ -260,11 +304,43 @@ src/modules/products/
     id.ts
 ```
 
-### 3. Service Layer with Logging
+### 3. Create Custom Errors
+
+Create error classes in `error.ts` for business logic failures:
+
+```typescript
+// src/modules/products/error.ts
+import { t } from "@/libs/i18n";
+
+export class ProductNotFoundError extends Error {
+  readonly key: string;
+
+  constructor(locale: string = "en") {
+    super(t(locale, "products.notFound"));
+    this.key = "products.notFound";
+  }
+}
+
+export class InsufficientStockError extends Error {
+  readonly key: string;
+  readonly available: number;
+
+  constructor(available: number, locale: string = "en") {
+    super(t(locale, "products.insufficientStock", { available }));
+    this.key = "products.insufficientStock";
+    this.available = available;
+  }
+}
+```
+
+### 4. Service Layer with Logging
+
+Use custom errors instead of generic `throw new Error()`:
 
 ```typescript
 import type { Logger } from "pino";
 import { prisma } from "@/libs/prisma";
+import { ProductNotFoundError, InsufficientStockError } from "./error";
 
 export abstract class ProductService {
   static async getProducts(params: {...}, log: Logger) {
@@ -304,16 +380,73 @@ export abstract class ProductService {
 
     log.info({ productId: id }, "Product deleted successfully");
   }
+
+  static async getProductById(id: string, log: Logger, locale: string = "en") {
+    log.debug({ productId: id }, "Fetching product by ID");
+
+    const product = await prisma.product.findUnique({ where: { id } });
+
+    if (!product) {
+      log.warn({ productId: id }, "Product not found");
+      throw new ProductNotFoundError(locale);
+    }
+
+    return product;
+  }
+
+  static async checkStock(id: string, quantity: number, log: Logger, locale: string = "en") {
+    log.debug({ productId: id, quantity }, "Checking product stock");
+
+    const product = await prisma.product.findUnique({ where: { id } });
+
+    if (!product) {
+      throw new ProductNotFoundError(locale);
+    }
+
+    if (product.stock < quantity) {
+      throw new InsufficientStockError(product.stock, locale);
+    }
+
+    return true;
+  }
 }
 ```
 
-### 4. Route Handlers
+### 5. Route Handlers with Error Registration
+
+Register custom error handlers in the module's `index.ts`:
 
 ```typescript
 import { createBaseApp, createProtectedApp } from "@/libs/base";
-import { successResponse } from "@/libs/response";
+import { successResponse, errorResponse } from "@/libs/response";
+import { ProductService } from "./service";
+import { ProductNotFoundError, InsufficientStockError } from "./error";
 
 const protectedProducts = createProtectedApp()
+  .onError(({ error, set, locale }) => {
+    if (error instanceof ProductNotFoundError) {
+      return errorResponse(
+        set,
+        404,
+        { key: "products.notFound" },
+        null,
+        locale,
+      );
+    }
+
+    if (error instanceof InsufficientStockError) {
+      return errorResponse(
+        set,
+        400,
+        {
+          key: "products.insufficientStock",
+          params: { available: error.available },
+        },
+        null,
+        locale,
+      );
+    }
+  })
   .get("/", async ({ query, set, log, locale }) => {
     const { products, pagination } = await ProductService.getProducts(
       query,
@@ -327,6 +460,17 @@ const protectedProducts = createProtectedApp()
       {
         pagination,
       },
+      locale,
+    );
+  })
+  .get("/:id", async ({ params, set, log, locale }) => {
+    const product = await ProductService.getProductById(params.id, log, locale);
+    return successResponse(
+      set,
+      product,
+      { key: "products.getSuccess" },
+      200,
+      undefined,
       locale,
     );
   })
@@ -348,11 +492,12 @@ export const products = createBaseApp({ tags: ["Products"] }).group(
 );
 ```
 
-### 5. Testing
+### 6. Testing
 
 Create tests in `src/__tests__/products/`:
 
 - `list.test.ts` - Test GET endpoint with pagination
+- `get.test.ts` - Test GET endpoint detail
 - `create.test.ts` - Test POST endpoint
 - `update.test.ts` - Test PATCH endpoint
 - `delete.test.ts` - Test DELETE endpoint
@@ -391,7 +536,7 @@ describe("POST /products", () => {
 });
 ```
 
-### 6. Register Module
+### 7. Register Module
 
 Add to `src/modules/index.ts`:
 
@@ -401,7 +546,7 @@ import { products } from "./products";
 export const modules = [auth, user, rbac, products];
 ```
 
-### 7. Verify
+### 8. Verify
 
 ```bash
 bun run lint           # Check for linting errors
