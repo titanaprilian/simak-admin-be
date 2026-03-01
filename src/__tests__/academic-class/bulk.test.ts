@@ -38,14 +38,14 @@ describe("POST /academic-classes/bulk", () => {
     expect(res.status).toBe(401);
   });
 
-  it("should bulk create academic classes successfully", async () => {
+  it.only("should bulk create academic classes successfully", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
     const faculty = await prisma.faculty.create({
-      data: { code: "FK", name: "Fakultas Teknik" },
+      data: { code: "5", name: "Fakultas Teknik" },
     });
 
     const educationalProgram = await prisma.educationalProgram.create({
@@ -55,7 +55,7 @@ describe("POST /academic-classes/bulk", () => {
     const studyProgram = await prisma.studyProgram.create({
       data: {
         facultyId: faculty.id,
-        code: "TI",
+        code: "3",
         name: "Teknik Informatika",
         educationalProgramId: educationalProgram.id,
       },
@@ -92,9 +92,9 @@ describe("POST /academic-classes/bulk", () => {
     });
 
     expect(classes.length).toBe(3);
-    expect(classes[0].name).toBe("TI-2024-A");
-    expect(classes[1].name).toBe("TI-2024-B");
-    expect(classes[2].name).toBe("TI-2024-C");
+    expect(classes[0].name).toBe("53-2024-A");
+    expect(classes[1].name).toBe("53-2024-B");
+    expect(classes[2].name).toBe("53-2024-C");
   });
 
   it("should return 409 if duplicate class exists", async () => {

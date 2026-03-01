@@ -341,6 +341,7 @@ export abstract class AcademicClassService {
 
     const studyProgram = await prisma.studyProgram.findUnique({
       where: { id: studyProgramId },
+      include: { faculty: true },
     });
 
     if (!studyProgram) {
@@ -353,7 +354,8 @@ export abstract class AcademicClassService {
     );
 
     const classNames = letters.map(
-      (letter) => `${studyProgram.code}-${enrollmentYear}-${letter}`,
+      (letter) =>
+        `${studyProgram.faculty.code}${studyProgram.code}-${enrollmentYear}-${letter}`,
     );
 
     const existingClasses = await prisma.academicClass.findMany({
