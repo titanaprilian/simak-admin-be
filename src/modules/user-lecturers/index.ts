@@ -1,3 +1,5 @@
+// TODO: IMPLEMENT TESTING ON OPTIONS ENDPOINT
+
 import { LecturerService } from "./service";
 import { LecturerModel } from "./model";
 import {
@@ -5,6 +7,7 @@ import {
   UpdateUserLecturerSchema,
   LecturerQuerySchema,
   LecturerParamsSchema,
+  LecturerOptionsQuerySchema,
 } from "./schema";
 import { errorResponse, successResponse } from "@/libs/response";
 import { createBaseApp, createProtectedApp } from "@/libs/base";
@@ -35,6 +38,37 @@ const protectedLecturer = createProtectedApp()
       query: LecturerQuerySchema,
       response: {
         200: LecturerModel.list,
+        400: LecturerModel.validationError,
+        500: LecturerModel.error,
+      },
+    },
+  )
+  .get(
+    "/options",
+    async ({ query, set, log, locale }) => {
+      const { page, limit, search } = query;
+      const { lecturers, pagination } = await LecturerService.getOptions(
+        {
+          page: Number(page) || 1,
+          limit: Number(limit) || 10,
+          search: search as string | undefined,
+        },
+        log,
+      );
+      return successResponse(
+        set,
+        lecturers,
+        { key: "lecturer.optionsSuccess" },
+        200,
+        { pagination },
+        locale,
+      );
+    },
+    {
+      beforeHandle: hasPermission(FEATURE_NAME, "read"),
+      query: LecturerOptionsQuerySchema,
+      response: {
+        200: LecturerModel.getOptions,
         400: LecturerModel.validationError,
         500: LecturerModel.error,
       },

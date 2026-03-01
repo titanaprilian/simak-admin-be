@@ -41,6 +41,12 @@ export const LecturerSafe = z.object({
   updatedAt: z.string().datetime(),
 });
 
+export const LecturerOption = z.object({
+  id: z.string(),
+  nidn: z.string().nullable(),
+  fullName: z.string(),
+});
+
 export const LecturerWithRelations = LecturerSafe.extend({
   user: UserData,
   studyProgram: StudyProgramData,
@@ -83,6 +89,7 @@ export const LecturerModel = {
   create: createResponseSchema(LecturerWithUser),
   update: createResponseSchema(LecturerWithUser),
   delete: createResponseSchema(z.null()),
+  getOptions: createPaginatedResponseSchema(z.array(LecturerOption)),
   error: createErrorSchema(z.null()),
   validationError: createErrorSchema(
     z.array(

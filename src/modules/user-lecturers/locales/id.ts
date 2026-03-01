@@ -4,6 +4,7 @@ export const id = {
   createSuccess: "Dosen berhasil dibuat",
   updateSuccess: "Dosen berhasil diperbarui",
   deleteSuccess: "Dosen berhasil dihapus",
+  optionsSuccess: "Opsi dosen berhasil diambil",
   notFound: "Dosen tidak ditemukan",
   lecturerNotFound: "Dosen tidak ditemukan",
   userAlreadyHasLecturer: "Pengguna sudah memiliki profil dosen",

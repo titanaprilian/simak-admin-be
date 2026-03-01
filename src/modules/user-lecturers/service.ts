@@ -1,4 +1,5 @@
 import { prisma } from "@/libs/prisma";
+import type { Prisma } from "@generated/prisma";
 import type {
   CreateUserLecturerInput,
   UpdateUserLecturerInput,
@@ -393,5 +394,53 @@ export const LecturerService = {
     } catch (error) {
       handlePrismaError(error, log);
     }
+  },
+
+  getOptions: async (
+    params: { page: number; limit: number; search?: string },
+    log: Logger,
+  ) => {
+    log.debug(
+      { page: params.page, limit: params.limit, search: params.search },
+      "Fetching lecturer options",
+    );
+
+    const { page, limit, search } = params;
+    const where: Prisma.LecturerWhereInput = {};
+
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: "insensitive" as const } },
+        { nidn: { contains: search, mode: "insensitive" as const } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [lecturers, total] = await prisma.$transaction([
+      prisma.lecturer.findMany({
+        where,
+        select: { id: true, fullName: true, nidn: true },
+        skip,
+        take: limit,
+        orderBy: { fullName: "asc" },
+      }),
+      prisma.lecturer.count({ where }),
+    ]);
+
+    log.info(
+      { count: lecturers.length, total },
+      "Lecturer options retrieved successfully",
+    );
+
+    return {
+      lecturers,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   },
 };

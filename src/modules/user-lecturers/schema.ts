@@ -1,3 +1,4 @@
+import { PaginationSchema } from "@/libs/response";
 import { z } from "zod";
 
 export const CreateUserLecturerSchema = z.object({
@@ -39,7 +40,12 @@ export const LecturerParamsSchema = z.object({
   id: z.string(),
 });
 
+export const LecturerOptionsQuerySchema = PaginationSchema.extend({
+  search: z.string().optional(),
+});
+
 export type CreateUserLecturerInput = z.infer<typeof CreateUserLecturerSchema>;
 export type UpdateUserLecturerInput = z.infer<typeof UpdateUserLecturerSchema>;
 export type LecturerQuery = z.infer<typeof LecturerQuerySchema>;
 export type LecturerParams = z.infer<typeof LecturerParamsSchema>;
+export type LecturerOptionsQuery = z.infer<typeof LecturerOptionsQuerySchema>;

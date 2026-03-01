@@ -6,5 +6,6 @@ export const es = {
   deleteSuccess: "Docente eliminado exitosamente",
   notFound: "Docente no encontrado",
   lecturerNotFound: "Docente no encontrado",
+  optionsSuccess: "Opciones de docente recuperadas exitosamente",
   userAlreadyHasLecturer: "El usuario ya tiene un perfil de docente",
 };
