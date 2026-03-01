@@ -10,3 +10,4 @@ export { userStudents } from "./user-students";
 export { position } from "./position";
 export { userPositions } from "./user-positions";
 export { educationalProgram } from "./educational-program";
+export { academicClass } from "./academic-class";

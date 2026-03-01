@@ -10,6 +10,7 @@ export async function resetDatabase() {
   await prisma.positionAssignment.deleteMany();
   await prisma.position.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.academicClass.deleteMany();
   await prisma.studyProgram.deleteMany();
   await prisma.faculty.deleteMany();
   await prisma.roleFeature.deleteMany();
@@ -309,8 +310,17 @@ export async function createLecturerTestFixture() {
     data: { code: "FK", name: "Fakultas Teknik" },
   });
 
+  const educationalProgram = await prisma.educationalProgram.create({
+    data: { name: "Sarjana (S1)", level: "S1" },
+  });
+
   const program = await prisma.studyProgram.create({
-    data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    data: {
+      facultyId: faculty.id,
+      code: "TI",
+      name: "Teknik Informatika",
+      educationalProgramId: educationalProgram.id,
+    },
   });
 
   const role = await prisma.role.create({ data: { name: "LecturerRole" } });
@@ -342,8 +352,17 @@ export async function createLecturerListTestFixtures(count: number) {
     data: { code: "FK", name: "Fakultas Teknik" },
   });
 
+  const educationalProgram = await prisma.educationalProgram.create({
+    data: { name: "Sarjana (S1)", level: "S1" },
+  });
+
   const program = await prisma.studyProgram.create({
-    data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    data: {
+      facultyId: faculty.id,
+      code: "TI",
+      name: "Teknik Informatika",
+      educationalProgramId: educationalProgram.id,
+    },
   });
 
   const role = await prisma.role.create({ data: { name: "LecturerRole" } });
@@ -408,11 +427,16 @@ export async function createPositionTestFixture(): Promise<PositionTestFixture> 
     data: { code: `FK${Date.now()}`, name: "Fakultas Teknik" },
   });
 
+  const educationalProgram = await prisma.educationalProgram.create({
+    data: { name: "Sarjana (S1)", level: "S1" },
+  });
+
   const studyProgram = await prisma.studyProgram.create({
     data: {
       facultyId: faculty.id,
       code: `TI${Date.now()}`,
       name: "Teknik Informatika",
+      educationalProgramId: educationalProgram.id,
     },
   });
 

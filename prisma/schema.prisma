@@ -67,6 +67,7 @@ model StudyProgram {
   lecturers            Lecturer[]
   positions            PositionAssignment[]
   students             Student[]
+  academicClasses      AcademicClass[]
   faculty              Faculty              @relation(fields: [facultyId], references: [id])
   educationalProgram   EducationalProgram   @relation(fields: [educationalProgramId], references: [id])
 
@@ -110,6 +111,7 @@ model Lecturer {
   updatedAt      DateTime     @updatedAt
   studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id])
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  advisedClasses AcademicClass[]
 
   @@index([studyProgramId])
 }
@@ -189,6 +191,23 @@ model EducationalProgram {
   studyPrograms StudyProgram[]
 
   @@unique([name, level])
+}
+
+model AcademicClass {
+  id                String   @id @default(cuid())
+  name              String
+  studyProgramId    String
+  enrollmentYear    Int
+  capacity          Int      @default(30)
+  advisorLecturerId String?
+
+  studyProgram      StudyProgram @relation(fields: [studyProgramId], references: [id])
+  advisorLecturer   Lecturer?    @relation(fields: [advisorLecturerId], references: [id])
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([studyProgramId, enrollmentYear, name])
 }
 
 enum StatusMhs {

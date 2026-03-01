@@ -61,6 +61,11 @@ import {
   es as educationalProgramEs,
   id as educationalProgramId,
 } from "@/modules/educational-program/locales";
+import {
+  en as academicClassEn,
+  es as academicClassEs,
+  id as academicClassId,
+} from "@/modules/academic-class/locales";
 
 const en = {
   common: commonEn,
@@ -77,6 +82,7 @@ const en = {
   userStudents: userStudentsEn,
   userPositions: userPositionsEn,
   educationalProgram: educationalProgramEn,
+  academicClass: academicClassEn,
 };
 
 const es = {
@@ -94,6 +100,7 @@ const es = {
   userStudents: userStudentsEs,
   userPositions: userPositionsEs,
   educationalProgram: educationalProgramEs,
+  academicClass: academicClassEs,
 };
 
 const id = {
@@ -111,6 +118,7 @@ const id = {
   userStudents: userStudentsId,
   userPositions: userPositionsId,
   educationalProgram: educationalProgramId,
+  academicClass: academicClassId,
 };
 
 const locales: Record<string, typeof en> = {
