@@ -38,6 +38,11 @@ export const AcademicClassModel = {
   createResult: createResponseSchema(AcademicClassSafe),
   updateResult: createResponseSchema(AcademicClassSafe),
   deleteResult: createResponseSchema(AcademicClassSafe),
+  bulkCreateResult: createResponseSchema(
+    z.object({
+      count: z.number(),
+    }),
+  ),
 
   error: createErrorSchema(z.null()),
   validationError: createErrorSchema(

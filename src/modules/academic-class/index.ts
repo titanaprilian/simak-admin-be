@@ -120,6 +120,8 @@ const protectedAcademicClass = createProtectedApp()
     "/bulk",
     async ({ body, set, log, locale }) => {
       const result = await AcademicClassService.bulkCreate(body, log, locale);
+
+      console.log(result);
       return successResponse(
         set,
         result,
@@ -133,7 +135,7 @@ const protectedAcademicClass = createProtectedApp()
       body: BulkCreateAcademicClassSchema,
       beforeHandle: hasPermission(FEATURE_NAME, "create"),
       response: {
-        201: AcademicClassModel.createResult,
+        201: AcademicClassModel.bulkCreateResult,
         400: AcademicClassModel.validationError,
         409: AcademicClassModel.error,
         500: AcademicClassModel.error,

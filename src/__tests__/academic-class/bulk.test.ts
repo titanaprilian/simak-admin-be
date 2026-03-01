@@ -38,7 +38,7 @@ describe("POST /academic-classes/bulk", () => {
     expect(res.status).toBe(401);
   });
 
-  it("should bulk create academic classes successfully", async () => {
+  it.only("should bulk create academic classes successfully", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "academic_class", action: "create" },
     ]);
@@ -80,6 +80,7 @@ describe("POST /academic-classes/bulk", () => {
     );
 
     const body = await res.json();
+    console.log(body);
     expect(res.status).toBe(201);
     expect(body.data.count).toBe(3);
 
