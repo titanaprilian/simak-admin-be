@@ -16,10 +16,15 @@ const FEATURES = [
     name: "educational_program_management",
     description: "Manage educational program",
   },
+  { name: "academic_class_management", description: "Manage Classes" },
 ] as const;
 
 const ROLES = [
   { name: "SuperAdmin", description: "Full System Access" },
+  {
+    name: "Mahasiswa",
+    description: "Mahasiswa Universitas Muhammadiyah Ponorogo",
+  },
 ] as const;
 
 // Helper Type for IntelliSense
@@ -52,6 +57,7 @@ const ROLE_PERMISSIONS: Record<
       d: true,
       p: true,
     },
+    academic_class_management: { c: true, r: true, u: true, d: true, p: true },
   },
 };
 

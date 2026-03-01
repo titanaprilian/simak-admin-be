@@ -32,7 +32,7 @@ describe("DELETE /academic-classes/:id", () => {
 
   it("should delete academic class successfully", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "delete" },
+      { featureName: "academic_class_management", action: "delete" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -82,7 +82,7 @@ describe("DELETE /academic-classes/:id", () => {
 
   it("should return 404 if academic class not found", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "delete" },
+      { featureName: "academic_class_management", action: "delete" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 

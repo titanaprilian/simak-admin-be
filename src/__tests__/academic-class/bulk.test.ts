@@ -38,9 +38,9 @@ describe("POST /academic-classes/bulk", () => {
     expect(res.status).toBe(401);
   });
 
-  it.only("should bulk create academic classes successfully", async () => {
+  it("should bulk create academic classes successfully", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "create" },
+      { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -80,7 +80,6 @@ describe("POST /academic-classes/bulk", () => {
     );
 
     const body = await res.json();
-    console.log(body);
     expect(res.status).toBe(201);
     expect(body.data.count).toBe(3);
 
@@ -100,7 +99,7 @@ describe("POST /academic-classes/bulk", () => {
 
   it("should return 409 if duplicate class exists", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "create" },
+      { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -152,7 +151,7 @@ describe("POST /academic-classes/bulk", () => {
 
   it("should return 400 if study program not found", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "create" },
+      { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -179,7 +178,7 @@ describe("POST /academic-classes/bulk", () => {
 
   it("should return 400 if totalClasses > 26", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "create" },
+      { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 

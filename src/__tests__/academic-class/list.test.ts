@@ -32,7 +32,7 @@ describe("GET /academic-classes", () => {
 
   it("should return paginated academic classes", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "read" },
+      { featureName: "academic_class_management", action: "read" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -80,7 +80,7 @@ describe("GET /academic-classes", () => {
 
   it("should include studyProgram and advisorLecturer relations", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "read" },
+      { featureName: "academic_class_management", action: "read" },
     ]);
     const { authHeaders, user } = await createAuthenticatedUser({
       roleId: role.id,
@@ -141,7 +141,7 @@ describe("GET /academic-classes", () => {
 
   it("should filter by studyProgramId", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "read" },
+      { featureName: "academic_class_management", action: "read" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -199,7 +199,7 @@ describe("GET /academic-classes", () => {
 
   it("should filter by enrollmentYear", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "read" },
+      { featureName: "academic_class_management", action: "read" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -245,7 +245,7 @@ describe("GET /academic-classes", () => {
 
   it("should search by name", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "read" },
+      { featureName: "academic_class_management", action: "read" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 

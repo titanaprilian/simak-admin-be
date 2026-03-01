@@ -31,7 +31,7 @@ export const AcademicClassWithRelations = AcademicClassSafe.extend({
 });
 
 export const AcademicClassModel = {
-  academicClass: createResponseSchema(AcademicClassSafe),
+  academicClass: createResponseSchema(AcademicClassWithRelations),
   academicClasses: createPaginatedResponseSchema(
     z.array(AcademicClassWithRelations),
   ),

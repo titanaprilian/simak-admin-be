@@ -17,7 +17,7 @@ import {
   LecturerNotFoundError,
 } from "./error";
 
-const FEATURE_NAME = "academic_class";
+const FEATURE_NAME = "academic_class_management";
 
 const protectedAcademicClass = createProtectedApp()
   .get(
@@ -121,7 +121,6 @@ const protectedAcademicClass = createProtectedApp()
     async ({ body, set, log, locale }) => {
       const result = await AcademicClassService.bulkCreate(body, log, locale);
 
-      console.log(result);
       return successResponse(
         set,
         result,

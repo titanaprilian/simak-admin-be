@@ -40,7 +40,7 @@ describe("POST /academic-classes", () => {
 
   it("should create academic class successfully", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "create" },
+      { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -89,7 +89,7 @@ describe("POST /academic-classes", () => {
 
   it("should return 409 if duplicate academic class", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "create" },
+      { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -141,7 +141,7 @@ describe("POST /academic-classes", () => {
 
   it("should return 400 if study program not found", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "create" },
+      { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -168,7 +168,7 @@ describe("POST /academic-classes", () => {
 
   it("should create academic class with advisor lecturer", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "create" },
+      { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders, user } = await createAuthenticatedUser({
       roleId: role.id,
@@ -226,7 +226,7 @@ describe("POST /academic-classes", () => {
 
   it("should return 400 if advisor lecturer not found", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "create" },
+      { featureName: "academic_class_management", action: "create" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 

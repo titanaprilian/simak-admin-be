@@ -32,7 +32,7 @@ describe("GET /academic-classes/:id", () => {
 
   it("should return academic class by id", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "read" },
+      { featureName: "academic_class_management", action: "read" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -81,7 +81,7 @@ describe("GET /academic-classes/:id", () => {
 
   it("should return 404 if academic class not found", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "read" },
+      { featureName: "academic_class_management", action: "read" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -100,7 +100,7 @@ describe("GET /academic-classes/:id", () => {
 
   it("should return Spanish message when Accept-Language is es", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "read" },
+      { featureName: "academic_class_management", action: "read" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 

@@ -34,7 +34,7 @@ describe("PATCH /academic-classes/:id", () => {
 
   it("should update academic class successfully", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "update" },
+      { featureName: "academic_class_management", action: "update" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -82,7 +82,7 @@ describe("PATCH /academic-classes/:id", () => {
 
   it("should return 404 if academic class not found", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "update" },
+      { featureName: "academic_class_management", action: "update" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
@@ -103,7 +103,7 @@ describe("PATCH /academic-classes/:id", () => {
 
   it("should return 409 if duplicate academic class", async () => {
     const role = await createTestRoleWithPermissions("TestUser", [
-      { featureName: "academic_class", action: "update" },
+      { featureName: "academic_class_management", action: "update" },
     ]);
     const { authHeaders } = await createAuthenticatedUser({ roleId: role.id });
 
