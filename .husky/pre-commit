@@ -1,2 +1,1 @@
-bun test integration
 bun x lint-staged
