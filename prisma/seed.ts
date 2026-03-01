@@ -12,6 +12,10 @@ const FEATURES = [
   { name: "studyProgram_management", description: "Manage study programs" },
   { name: "faculty_management", description: "Manage faculties" },
   { name: "student_management", description: "Manage students" },
+  {
+    name: "educational_program_management",
+    description: "Manage educational program",
+  },
 ] as const;
 
 const ROLES = [
@@ -41,6 +45,13 @@ const ROLE_PERMISSIONS: Record<
     studyProgram_management: { c: true, r: true, u: true, d: true, p: true },
     faculty_management: { c: true, r: true, u: true, d: true, p: true },
     student_management: { c: true, r: true, u: true, d: true, p: true },
+    educational_program_management: {
+      c: true,
+      r: true,
+      u: true,
+      d: true,
+      p: true,
+    },
   },
 };
 
