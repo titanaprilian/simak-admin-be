@@ -546,7 +546,7 @@ describe("GET /users", () => {
     expect(body.data.every((u: any) => u.isActive === false)).toBe(true);
   });
 
-  it.only("should filter users by roleId", async () => {
+  it("should filter users by roleId", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "user_management", action: "read" },

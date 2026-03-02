@@ -101,16 +101,16 @@ model Student {
 }
 
 model Lecturer {
-  id             String       @id @default(cuid())
-  userId         String       @unique
+  id             String          @id @default(cuid())
+  userId         String          @unique
   nidn           String?
   fullName       String
   gender         String
   studyProgramId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id])
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  studyProgram   StudyProgram    @relation(fields: [studyProgramId], references: [id])
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   advisedClasses AcademicClass[]
 
   @@index([studyProgramId])
@@ -194,20 +194,34 @@ model EducationalProgram {
 }
 
 model AcademicClass {
-  id                String   @id @default(cuid())
+  id                String  @id @default(cuid())
   name              String
   studyProgramId    String
   enrollmentYear    Int
-  capacity          Int      @default(30)
+  capacity          Int     @default(30)
   advisorLecturerId String?
 
-  studyProgram      StudyProgram @relation(fields: [studyProgramId], references: [id])
-  advisorLecturer   Lecturer?    @relation(fields: [advisorLecturerId], references: [id])
+  studyProgram    StudyProgram @relation(fields: [studyProgramId], references: [id])
+  advisorLecturer Lecturer?    @relation(fields: [advisorLecturerId], references: [id])
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([studyProgramId, enrollmentYear, name])
+}
+
+model AcademicTerm {
+  id           String   @id @default(cuid())
+  academicYear String // Format: 2024/2025
+  termType     String // GANJIL / GENAP
+  termOrder    Int // 1, 2, etc.
+  startDate    DateTime @db.Date
+  endDate      DateTime @db.Date
+  isActive     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([academicYear, termType])
 }
 
 enum StatusMhs {

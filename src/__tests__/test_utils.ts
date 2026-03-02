@@ -17,6 +17,7 @@ export async function resetDatabase() {
   await prisma.role.deleteMany();
   await prisma.feature.deleteMany();
   await prisma.educationalProgram.deleteMany();
+  await prisma.academicTerm.deleteMany();
 }
 
 // Creates a user with defaults, allowing you to override fields
