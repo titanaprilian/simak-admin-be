@@ -72,6 +72,8 @@ export abstract class AcademicTermService {
       log.info({ id }, "AcademicTerm retrieved successfully");
       return {
         ...term,
+        startDate: term.startDate.toISOString(),
+        endDate: term.endDate.toISOString(),
         createdAt: term.createdAt.toISOString(),
         updatedAt: term.updatedAt.toISOString(),
       };
@@ -150,6 +152,8 @@ export abstract class AcademicTermService {
 
         return {
           ...term,
+          startDate: term.startDate.toISOString(),
+          endDate: term.startDate.toISOString(),
           createdAt: term.createdAt.toISOString(),
           updatedAt: term.updatedAt.toISOString(),
         };
@@ -191,6 +195,8 @@ export abstract class AcademicTermService {
 
         return {
           ...updated,
+          startDate: updated.startDate.toISOString(),
+          endDate: updated.endDate.toISOString(),
           createdAt: updated.createdAt.toISOString(),
           updatedAt: updated.updatedAt.toISOString(),
         };

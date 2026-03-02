@@ -100,6 +100,7 @@ const protectedTerms = createProtectedApp()
     "/",
     async ({ body, log, set, locale }) => {
       const term = await AcademicTermService.createTerm(body, log, locale);
+
       return successResponse(
         set,
         term,
