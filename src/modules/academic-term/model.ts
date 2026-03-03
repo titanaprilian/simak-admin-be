@@ -30,7 +30,7 @@ export const AcademicTermModel = {
   validationError: createErrorSchema(
     z.array(
       z.object({
-        path: z.string(),
+        field: z.string(),
         message: z.string(),
       }),
     ),

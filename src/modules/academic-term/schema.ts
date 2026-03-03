@@ -6,7 +6,11 @@ export const TermTypeEnum = z.enum(["GANJIL", "GENAP"]);
 const AcademicTermShape = z.object({
   academicYear: z.string().regex(/^\d{4}\/\d{4}$/, "Format must be YYYY/YYYY"),
   termType: TermTypeEnum,
-  termOrder: z.number().min(1),
+  termOrder: z.preprocess(
+    (val) =>
+      val === null || val === undefined || Number.isNaN(val) ? undefined : val,
+    z.number().min(1).optional(),
+  ),
   startDate: z.string().pipe(z.coerce.date()),
   endDate: z.string().pipe(z.coerce.date()),
   isActive: z.boolean().optional(),

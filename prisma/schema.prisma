@@ -214,7 +214,7 @@ model AcademicTerm {
   id           String   @id @default(cuid())
   academicYear String // Format: 2024/2025
   termType     String // GANJIL / GENAP
-  termOrder    Int // 1, 2, etc.
+  termOrder    Int      @unique
   startDate    DateTime @db.Date
   endDate      DateTime @db.Date
   isActive     Boolean  @default(false)

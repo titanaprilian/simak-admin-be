@@ -260,4 +260,105 @@ describe("POST /academic-terms - Create Academic Term", () => {
     // Date fields are converted to strings in JSON response
     expect(typeof body.data.startDate).toBe("string");
   });
+
+  it("should successfully create a term even when the term order is not sended", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "academic_term_management", action: "create" },
+    ]);
+
+    const res = await app.handle(
+      new Request("http://localhost/academic-terms", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          academicYear: "2024/2025",
+          termType: "GENAP",
+          startDate: "2025-02-01T00:00:00.000Z",
+          endDate: "2025-06-30T00:00:00.000Z",
+        }),
+      }),
+    );
+
+    const body = await res.json();
+    expect(res.status).toBe(201);
+    expect(body.data).toHaveProperty("id");
+    expect(body.data.academicYear).toBe("2024/2025");
+    expect(body.data.termType).toBe("GENAP");
+    // Date fields are converted to strings in JSON response
+    expect(typeof body.data.startDate).toBe("string");
+
+    const academicTerm = await prisma.academicTerm.findFirstOrThrow({
+      where: { id: body.data.id },
+    });
+    expect(academicTerm.termOrder).toBe(1);
+  });
+
+  it("should successfully create a term even when the term order is undefined", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "academic_term_management", action: "create" },
+    ]);
+
+    const res = await app.handle(
+      new Request("http://localhost/academic-terms", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          academicYear: "2024/2025",
+          termType: "GENAP",
+          termOrder: undefined,
+          startDate: "2025-02-01T00:00:00.000Z",
+          endDate: "2025-06-30T00:00:00.000Z",
+        }),
+      }),
+    );
+
+    const body = await res.json();
+    expect(res.status).toBe(201);
+    expect(body.data).toHaveProperty("id");
+    expect(body.data.academicYear).toBe("2024/2025");
+    expect(body.data.termType).toBe("GENAP");
+    // Date fields are converted to strings in JSON response
+    expect(typeof body.data.startDate).toBe("string");
+
+    const academicTerm = await prisma.academicTerm.findFirstOrThrow({
+      where: { id: body.data.id },
+    });
+    expect(academicTerm.termOrder).toBe(1);
+  });
+
+  it("should successfully create a term even when the term order is null", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "academic_term_management", action: "create" },
+    ]);
+
+    const res = await app.handle(
+      new Request("http://localhost/academic-terms", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          academicYear: "2024/2025",
+          termType: "GENAP",
+          termOrder: null,
+          startDate: "2025-02-01T00:00:00.000Z",
+          endDate: "2025-06-30T00:00:00.000Z",
+        }),
+      }),
+    );
+
+    const body = await res.json();
+    expect(res.status).toBe(201);
+    expect(body.data).toHaveProperty("id");
+    expect(body.data.academicYear).toBe("2024/2025");
+    expect(body.data.termType).toBe("GENAP");
+    // Date fields are converted to strings in JSON response
+    expect(typeof body.data.startDate).toBe("string");
+
+    const academicTerm = await prisma.academicTerm.findFirstOrThrow({
+      where: { id: body.data.id },
+    });
+    expect(academicTerm.termOrder).toBe(1);
+  });
 });

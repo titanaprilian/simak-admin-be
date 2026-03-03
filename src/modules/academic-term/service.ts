@@ -141,19 +141,35 @@ export abstract class AcademicTermService {
 
     try {
       return await prisma.$transaction(async (tx) => {
+        let termOrder = data.termOrder;
+
+        if (!termOrder) {
+          const lastTerm = await tx.academicTerm.findFirst({
+            orderBy: { termOrder: "desc" },
+            select: { termOrder: true },
+          });
+
+          termOrder = lastTerm ? lastTerm.termOrder + 1 : 1;
+        }
+
         if (data.isActive) {
           await tx.academicTerm.updateMany({
             where: { isActive: true },
             data: { isActive: false },
           });
         }
-        const term = await tx.academicTerm.create({ data });
+        const term = await tx.academicTerm.create({
+          data: {
+            ...data,
+            termOrder,
+          },
+        });
         log.info({ id: term.id }, "AcademicTerm created successfully");
 
         return {
           ...term,
           startDate: term.startDate.toISOString(),
-          endDate: term.startDate.toISOString(),
+          endDate: term.endDate.toISOString(),
           createdAt: term.createdAt.toISOString(),
           updatedAt: term.updatedAt.toISOString(),
         };

@@ -141,7 +141,11 @@ const protectedTerms = createProtectedApp()
     {
       body: UpdateAcademicTermSchema,
       beforeHandle: hasPermission(FEATURE, "update"),
-      response: { 200: AcademicTermModel.term, 404: AcademicTermModel.error },
+      response: {
+        200: AcademicTermModel.term,
+        400: AcademicTermModel.validationError,
+        404: AcademicTermModel.error,
+      },
     },
   )
   .delete(
