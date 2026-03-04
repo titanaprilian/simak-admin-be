@@ -33,7 +33,7 @@ export abstract class AcademicTermService {
         where,
         skip,
         take: limit,
-        orderBy: { academicYear: "desc" },
+        orderBy: { termOrder: "desc" },
       }),
       prisma.academicTerm.count({ where }),
     ]);
