@@ -142,14 +142,12 @@ describe("GET /user-students", () => {
       expect(student).toHaveProperty("email");
       expect(student).toHaveProperty("isActive");
       expect(student).toHaveProperty("name");
-      expect(student).toHaveProperty("generation");
       expect(student).toHaveProperty("gender");
-      expect(student).toHaveProperty("yearOfEntry");
       expect(student).toHaveProperty("birthYear");
-      expect(student).toHaveProperty("statusMhs");
       expect(student).toHaveProperty("jenis");
-      expect(student).toHaveProperty("semester");
       expect(student).toHaveProperty("studyProgram");
+      expect(student).toHaveProperty("academicClass");
+      expect(student).toHaveProperty("enrollmentTerm");
     });
   });
 
@@ -182,16 +180,59 @@ describe("GET /user-students", () => {
       { featureName: "student_management", action: "read" },
     ]);
 
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana", level: "S1" },
+    });
+
     const faculty = await prisma.faculty.create({
       data: { code: "FK", name: "Fakultas Teknik" },
     });
 
     const program1 = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+      data: {
+        facultyId: faculty.id,
+        educationalProgramId: educationalProgram.id,
+        code: "TI",
+        name: "Teknik Informatika",
+      },
     });
 
     const program2 = await prisma.studyProgram.create({
-      data: { facultyId: faculty.id, code: "SI", name: "Sistem Informasi" },
+      data: {
+        facultyId: faculty.id,
+        educationalProgramId: educationalProgram.id,
+        code: "SI",
+        name: "Sistem Informasi",
+      },
+    });
+
+    const academicTerm = await prisma.academicTerm.create({
+      data: {
+        academicYear: "2024/2025",
+        termType: "GANJIL",
+        termOrder: 1,
+        startDate: new Date("2024-08-01"),
+        endDate: new Date("2024-12-31"),
+        isActive: true,
+      },
+    });
+
+    const academicClass1 = await prisma.academicClass.create({
+      data: {
+        name: "FKTI-2022-A",
+        studyProgramId: program1.id,
+        enrollmentYear: 2022,
+        capacity: 30,
+      },
+    });
+
+    const academicClass2 = await prisma.academicClass.create({
+      data: {
+        name: "FKSY-2022-A",
+        studyProgramId: program2.id,
+        enrollmentYear: 2022,
+        capacity: 30,
+      },
     });
 
     const role = await prisma.role.create({ data: { name: "StudentRole" } });
@@ -219,20 +260,20 @@ describe("GET /user-students", () => {
         {
           userId: user1.id,
           name: "Mahasiswa Satu",
-          generation: 2022,
           gender: "male",
-          yearOfEntry: 2022,
           birthYear: 2004,
           studyProgramId: program1.id,
+          academicClassId: academicClass1.id,
+          enrollmentTermId: academicTerm.id,
         },
         {
           userId: user2.id,
           name: "Mahasiswa Dua",
-          generation: 2022,
           gender: "female",
-          yearOfEntry: 2022,
           birthYear: 2004,
           studyProgramId: program2.id,
+          academicClassId: academicClass2.id,
+          enrollmentTermId: academicTerm.id,
         },
       ],
     });
@@ -254,12 +295,41 @@ describe("GET /user-students", () => {
 });
 
 async function createStudentTestFixtures(count: number) {
+  const educationalProgram = await prisma.educationalProgram.create({
+    data: { name: "Sarjana", level: "S1" },
+  });
+
   const faculty = await prisma.faculty.create({
     data: { code: "FK", name: "Fakultas Teknik" },
   });
 
   const program = await prisma.studyProgram.create({
-    data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    data: {
+      facultyId: faculty.id,
+      educationalProgramId: educationalProgram.id,
+      code: "TI",
+      name: "Teknik Informatika",
+    },
+  });
+
+  const academicTerm = await prisma.academicTerm.create({
+    data: {
+      academicYear: "2024/2025",
+      termType: "GANJIL",
+      termOrder: 1,
+      startDate: new Date("2024-08-01"),
+      endDate: new Date("2024-12-31"),
+      isActive: true,
+    },
+  });
+
+  const academicClass = await prisma.academicClass.create({
+    data: {
+      name: "FKTI-2022-A",
+      studyProgramId: program.id,
+      enrollmentYear: 2022,
+      capacity: 30,
+    },
   });
 
   const role = await prisma.role.create({ data: { name: "StudentRole" } });
@@ -279,16 +349,22 @@ async function createStudentTestFixtures(count: number) {
       data: {
         userId: user.id,
         name: `Mahasiswa ${i}`,
-        generation: 2022,
         gender: "male",
-        yearOfEntry: 2022,
         birthYear: 2004,
         studyProgramId: program.id,
+        academicClassId: academicClass.id,
+        enrollmentTermId: academicTerm.id,
       },
     });
 
     students.push(student);
   }
 
-  return { student: students[0], program, faculty };
+  return {
+    student: students[0],
+    program,
+    faculty,
+    academicClass,
+    academicTerm,
+  };
 }

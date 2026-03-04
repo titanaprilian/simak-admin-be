@@ -11,6 +11,7 @@ import {
   StudentAlreadyExistsError,
   StudentNotFoundError,
   DeleteSelfStudentError,
+  MahasiswaRoleNotFoundError,
 } from "./error";
 import { handlePrismaError } from "@/libs/exceptions";
 
@@ -64,6 +65,19 @@ export const StudentService = {
               name: true,
             },
           },
+          academicClass: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          enrollmentTerm: {
+            select: {
+              id: true,
+              academicYear: true,
+              termType: true,
+            },
+          },
         },
       }),
       prisma.student.count({ where }),
@@ -80,18 +94,15 @@ export const StudentService = {
       email: student.user.email,
       isActive: student.user.isActive,
       name: student.name,
-      generation: student.generation,
       gender: student.gender,
-      yearOfEntry: student.yearOfEntry,
       birthYear: student.birthYear,
       address: student.address,
-      statusMhs: student.statusMhs,
-      kelas: student.kelas,
       jenis: student.jenis,
       cityBirth: student.cityBirth,
       phoneNumber: student.phoneNumber,
-      semester: student.semester,
       studyProgram: student.studyProgram,
+      academicClass: student.academicClass,
+      enrollmentTerm: student.enrollmentTerm,
       createdAt: student.createdAt.toISOString(),
       updatedAt: student.updatedAt.toISOString(),
     }));
@@ -128,6 +139,19 @@ export const StudentService = {
               name: true,
             },
           },
+          academicClass: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          enrollmentTerm: {
+            select: {
+              id: true,
+              academicYear: true,
+              termType: true,
+            },
+          },
         },
       });
 
@@ -146,18 +170,15 @@ export const StudentService = {
         email: student.user.email,
         isActive: student.user.isActive,
         name: student.name,
-        generation: student.generation,
         gender: student.gender,
-        yearOfEntry: student.yearOfEntry,
         birthYear: student.birthYear,
         address: student.address,
-        statusMhs: student.statusMhs,
-        kelas: student.kelas,
         jenis: student.jenis,
         cityBirth: student.cityBirth,
         phoneNumber: student.phoneNumber,
-        semester: student.semester,
         studyProgram: student.studyProgram,
+        academicClass: student.academicClass,
+        enrollmentTerm: student.enrollmentTerm,
         createdAt: student.createdAt.toISOString(),
         updatedAt: student.updatedAt.toISOString(),
       };
@@ -173,42 +194,68 @@ export const StudentService = {
     );
 
     try {
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { loginId: data.loginId },
-            ...(data.email ? [{ email: data.email }] : []),
-          ],
-        },
-      });
+      let loginId = data.loginId;
 
-      if (existingUser) {
-        if (existingUser.loginId === data.loginId) {
-          log.warn({ loginId: data.loginId }, "Login ID already exists");
-          throw new LoginIdExistsError();
+      if (loginId) {
+        const existingUser = await prisma.user.findUnique({
+          where: { loginId },
+        });
+
+        if (existingUser) {
+          log.warn({ loginId }, "Login ID already exists");
+          throw new LoginIdExistsError(loginId);
         }
-        if (data.email && existingUser.email === data.email) {
+      } else {
+        loginId = await generateLoginId(
+          data.studyProgramId,
+          data.enrollmentTermId,
+          log,
+        );
+        log.debug({ loginId }, "Auto-generated loginId");
+      }
+
+      if (data.email) {
+        const existingUserWithEmail = await prisma.user.findFirst({
+          where: { email: data.email },
+        });
+
+        if (existingUserWithEmail) {
           log.warn({ email: data.email }, "Email already exists");
           throw new EmailExistsError();
         }
       }
 
       const existingStudent = await prisma.student.findFirst({
-        where: { user: { loginId: data.loginId } },
+        where: { user: { loginId } },
       });
 
       if (existingStudent) {
-        log.warn({ loginId: data.loginId }, "Student already exists");
+        log.warn({ loginId }, "Student already exists");
         throw new StudentAlreadyExistsError();
+      }
+
+      let roleId = data.roleId;
+      if (!roleId) {
+        const mahasiswaRole = await prisma.role.findUnique({
+          where: { name: "Mahasiswa" },
+        });
+
+        if (!mahasiswaRole) {
+          log.warn({}, "Mahasiswa role not found");
+          throw new MahasiswaRoleNotFoundError();
+        }
+
+        roleId = mahasiswaRole.id;
+        log.debug({ roleId: mahasiswaRole.id }, "Auto-assigned Mahasiswa role");
       }
 
       const created = await prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
           data: {
-            loginId: data.loginId,
+            loginId: loginId,
             email: data.email,
             password: data.password,
-            roleId: data.roleId,
+            roleId: roleId,
           },
         });
 
@@ -216,18 +263,15 @@ export const StudentService = {
           data: {
             userId: user.id,
             name: data.name,
-            generation: data.generation,
             gender: data.gender,
-            yearOfEntry: data.yearOfEntry,
             birthYear: data.birthYear,
             address: data.address,
-            statusMhs: data.statusMhs ?? "belum_program",
-            kelas: data.kelas,
             jenis: data.jenis ?? "reguler",
             cityBirth: data.cityBirth,
             phoneNumber: data.phoneNumber,
-            semester: data.semester ?? 1,
             studyProgramId: data.studyProgramId,
+            academicClassId: data.academicClassId,
+            enrollmentTermId: data.enrollmentTermId,
           },
           include: {
             user: {
@@ -242,6 +286,19 @@ export const StudentService = {
               select: {
                 id: true,
                 name: true,
+              },
+            },
+            academicClass: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            enrollmentTerm: {
+              select: {
+                id: true,
+                academicYear: true,
+                termType: true,
               },
             },
           },
@@ -261,18 +318,15 @@ export const StudentService = {
         email: created.user.email,
         isActive: created.user.isActive,
         name: created.name,
-        generation: created.generation,
         gender: created.gender,
-        yearOfEntry: created.yearOfEntry,
         birthYear: created.birthYear,
         address: created.address,
-        statusMhs: created.statusMhs,
-        kelas: created.kelas,
         jenis: created.jenis,
         cityBirth: created.cityBirth,
         phoneNumber: created.phoneNumber,
-        semester: created.semester,
         studyProgram: created.studyProgram,
+        academicClass: created.academicClass,
+        enrollmentTerm: created.enrollmentTerm,
         createdAt: created.createdAt.toISOString(),
         updatedAt: created.updatedAt.toISOString(),
       };
@@ -306,6 +360,19 @@ export const StudentService = {
               name: true,
             },
           },
+          academicClass: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          enrollmentTerm: {
+            select: {
+              id: true,
+              academicYear: true,
+              termType: true,
+            },
+          },
         },
       });
 
@@ -317,22 +384,21 @@ export const StudentService = {
       const updateData: Record<string, unknown> = {};
 
       if (data.name !== undefined) updateData.name = data.name;
-      if (data.generation !== undefined)
-        updateData.generation = data.generation;
       if (data.gender !== undefined) updateData.gender = data.gender;
-      if (data.yearOfEntry !== undefined)
-        updateData.yearOfEntry = data.yearOfEntry;
       if (data.birthYear !== undefined) updateData.birthYear = data.birthYear;
       if (data.address !== undefined) updateData.address = data.address;
-      if (data.statusMhs !== undefined) updateData.statusMhs = data.statusMhs;
-      if (data.kelas !== undefined) updateData.kelas = data.kelas;
       if (data.jenis !== undefined) updateData.jenis = data.jenis;
       if (data.cityBirth !== undefined) updateData.cityBirth = data.cityBirth;
       if (data.phoneNumber !== undefined)
         updateData.phoneNumber = data.phoneNumber;
-      if (data.semester !== undefined) updateData.semester = data.semester;
       if (data.studyProgramId !== undefined) {
         updateData.studyProgramId = data.studyProgramId;
+      }
+      if (data.academicClassId !== undefined) {
+        updateData.academicClassId = data.academicClassId;
+      }
+      if (data.enrollmentTermId !== undefined) {
+        updateData.enrollmentTermId = data.enrollmentTermId;
       }
 
       const userUpdateData: Record<string, unknown> = {};
@@ -365,6 +431,19 @@ export const StudentService = {
                 name: true,
               },
             },
+            academicClass: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            enrollmentTerm: {
+              select: {
+                id: true,
+                academicYear: true,
+                termType: true,
+              },
+            },
           },
         });
       });
@@ -377,18 +456,15 @@ export const StudentService = {
         email: updated.user.email,
         isActive: updated.user.isActive,
         name: updated.name,
-        generation: updated.generation,
         gender: updated.gender,
-        yearOfEntry: updated.yearOfEntry,
         birthYear: updated.birthYear,
         address: updated.address,
-        statusMhs: updated.statusMhs,
-        kelas: updated.kelas,
         jenis: updated.jenis,
         cityBirth: updated.cityBirth,
         phoneNumber: updated.phoneNumber,
-        semester: updated.semester,
         studyProgram: updated.studyProgram,
+        academicClass: updated.academicClass,
+        enrollmentTerm: updated.enrollmentTerm,
         createdAt: updated.createdAt.toISOString(),
         updatedAt: updated.updatedAt.toISOString(),
       };
@@ -438,3 +514,70 @@ export const StudentService = {
     }
   },
 };
+
+async function generateLoginId(
+  studyProgramId: string,
+  enrollmentTermId: string,
+  log: Logger,
+): Promise<string> {
+  const studyProgram = await prisma.studyProgram.findUnique({
+    where: { id: studyProgramId },
+    include: { faculty: true },
+  });
+
+  if (!studyProgram) {
+    throw new Error("Study program not found");
+  }
+
+  const academicTerm = await prisma.academicTerm.findUnique({
+    where: { id: enrollmentTermId },
+  });
+
+  if (!academicTerm) {
+    throw new Error("Academic term not found");
+  }
+
+  const firstYear = academicTerm.academicYear.split("/")[0];
+  const yearPrefix = firstYear.slice(-2);
+  const facultyCode = studyProgram.faculty.code;
+  const programCode = studyProgram.code;
+
+  const existingStudents = await prisma.student.findMany({
+    where: { studyProgramId },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    include: {
+      user: {
+        select: { loginId: true },
+      },
+    },
+  });
+
+  let uniqueNumber: number;
+
+  if (existingStudents.length > 0) {
+    const lastLoginId = existingStudents[0].user.loginId;
+    const lastUniqueNumber = parseInt(lastLoginId.slice(-4), 10);
+    uniqueNumber = lastUniqueNumber + 1;
+  } else {
+    uniqueNumber = 1;
+  }
+
+  if (uniqueNumber > 9999) {
+    throw new Error("Cannot generate more student IDs for this study program");
+  }
+
+  const loginId = `${yearPrefix}${facultyCode}${programCode}${uniqueNumber.toString().padStart(4, "0")}`;
+
+  const existingUser = await prisma.user.findUnique({
+    where: { loginId },
+  });
+
+  if (existingUser) {
+    log.warn({ loginId }, "Generated loginId already exists, retrying");
+    uniqueNumber = Math.floor(Math.random() * 9000) + 1000;
+    return `${yearPrefix}${facultyCode}${programCode}${uniqueNumber.toString().padStart(4, "0")}`;
+  }
+
+  return loginId;
+}

@@ -10,24 +10,32 @@ const StudyProgramData = z.object({
   name: z.string(),
 });
 
+const AcademicClassData = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+const EnrollmentTermData = z.object({
+  id: z.string(),
+  academicYear: z.string(),
+  termType: z.string(),
+});
+
 export const StudentData = z.object({
   id: z.string(),
   nim: z.string(),
   email: z.string().nullable(),
   isActive: z.boolean(),
   name: z.string(),
-  generation: z.number(),
   gender: z.string(),
-  yearOfEntry: z.number(),
   birthYear: z.number(),
   address: z.string().nullable(),
-  statusMhs: z.string(),
-  kelas: z.string().nullable(),
   jenis: z.string(),
   cityBirth: z.string().nullable(),
   phoneNumber: z.string().nullable(),
-  semester: z.number(),
   studyProgram: StudyProgramData,
+  academicClass: AcademicClassData,
+  enrollmentTerm: EnrollmentTermData,
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

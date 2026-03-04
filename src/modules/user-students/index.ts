@@ -15,6 +15,7 @@ import {
   StudentAlreadyExistsError,
   StudentNotFoundError,
   DeleteSelfStudentError,
+  MahasiswaRoleNotFoundError,
 } from "./error";
 
 const FEATURE_NAME = "student_management";
@@ -171,6 +172,9 @@ export const userStudents = createBaseApp({ tags: ["User Students"] }).group(
         }
         if (error instanceof DeleteSelfStudentError) {
           return errorResponse(set, 403, { key: error.key }, null, locale);
+        }
+        if (error instanceof MahasiswaRoleNotFoundError) {
+          return errorResponse(set, 400, { key: error.key }, null, locale);
         }
       })
       .use(protectedStudent),

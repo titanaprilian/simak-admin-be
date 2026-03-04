@@ -1,10 +1,12 @@
 export class LoginIdExistsError extends Error {
   readonly key: string;
+  readonly loginId: string;
 
-  constructor(locale: string = "en") {
-    super("Login ID already exists");
+  constructor(loginId: string, locale: string = "en") {
+    super(`Login ID ${loginId} already exists`);
     this.name = "LoginIdExistsError";
     this.key = "userStudents.loginIdExists";
+    this.loginId = loginId;
   }
 }
 
@@ -45,5 +47,15 @@ export class DeleteSelfStudentError extends Error {
     super("You cannot delete your own account");
     this.name = "DeleteSelfStudentError";
     this.key = "userStudents.deleteSelf";
+  }
+}
+
+export class MahasiswaRoleNotFoundError extends Error {
+  readonly key: string;
+
+  constructor(locale: string = "en") {
+    super("Mahasiswa role not found. Please contact administrator.");
+    this.name = "MahasiswaRoleNotFoundError";
+    this.key = "userStudents.mahasiswaRoleNotFound";
   }
 }

@@ -81,8 +81,9 @@ describe("GET /user-students/:id", () => {
     expect(body.data.nim).toBeDefined();
     expect(body.data.email).toBeDefined();
     expect(body.data.name).toBeDefined();
-    expect(body.data.generation).toBeDefined();
     expect(body.data.studyProgram).toBeDefined();
+    expect(body.data.academicClass).toBeDefined();
+    expect(body.data.enrollmentTerm).toBeDefined();
   });
 
   it("should return Spanish message when Accept-Language is es", async () => {
@@ -111,12 +112,41 @@ describe("GET /user-students/:id", () => {
 });
 
 async function createStudentTestFixtures(count: number) {
+  const educationalProgram = await prisma.educationalProgram.create({
+    data: { name: "Sarjana", level: "S1" },
+  });
+
   const faculty = await prisma.faculty.create({
     data: { code: "FK", name: "Fakultas Teknik" },
   });
 
   const program = await prisma.studyProgram.create({
-    data: { facultyId: faculty.id, code: "TI", name: "Teknik Informatika" },
+    data: {
+      facultyId: faculty.id,
+      educationalProgramId: educationalProgram.id,
+      code: "TI",
+      name: "Teknik Informatika",
+    },
+  });
+
+  const academicTerm = await prisma.academicTerm.create({
+    data: {
+      academicYear: "2024/2025",
+      termType: "GANJIL",
+      termOrder: 1,
+      startDate: new Date("2024-08-01"),
+      endDate: new Date("2024-12-31"),
+      isActive: true,
+    },
+  });
+
+  const academicClass = await prisma.academicClass.create({
+    data: {
+      name: "FKTI-2022-A",
+      studyProgramId: program.id,
+      enrollmentYear: 2022,
+      capacity: 30,
+    },
   });
 
   const role = await prisma.role.create({ data: { name: "StudentRole" } });
@@ -136,16 +166,22 @@ async function createStudentTestFixtures(count: number) {
       data: {
         userId: user.id,
         name: `Mahasiswa ${i}`,
-        generation: 2022,
         gender: "male",
-        yearOfEntry: 2022,
         birthYear: 2004,
         studyProgramId: program.id,
+        academicClassId: academicClass.id,
+        enrollmentTermId: academicTerm.id,
       },
     });
 
     students.push(student);
   }
 
-  return { student: students[0], program, faculty };
+  return {
+    student: students[0],
+    program,
+    faculty,
+    academicClass,
+    academicTerm,
+  };
 }

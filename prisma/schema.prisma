@@ -77,27 +77,28 @@ model StudyProgram {
 }
 
 model Student {
-  id             String       @id @default(cuid())
-  userId         String       @unique
-  name           String
-  generation     Int
-  gender         Gender
-  yearOfEntry    Int          @map("year_of_entry")
-  birthYear      Int          @map("birth_year")
-  address        String?
-  statusMhs      StatusMhs    @default(belum_program)
-  kelas          String?
-  jenis          JenisMhs     @default(reguler)
-  cityBirth      String?      @map("city_birth")
-  phoneNumber    String?      @map("phone_number")
-  semester       Int          @default(1)
-  studyProgramId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id])
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String         @id @default(cuid())
+  userId          String         @unique
+  name            String
+  gender          Gender
+  studyProgramId  String
+  academicClassId String
+  enrollmentTermId String
+  birthYear       Int            @map("birth_year")
+  address         String?
+  jenis           JenisMhs       @default(reguler)
+  cityBirth       String?        @map("city_birth")
+  phoneNumber     String?        @map("phone_number")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  studyProgram    StudyProgram   @relation(fields: [studyProgramId], references: [id])
+  academicClass   AcademicClass  @relation(fields: [academicClassId], references: [id])
+  enrollmentTerm  AcademicTerm   @relation(fields: [enrollmentTermId], references: [id])
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([studyProgramId])
+  @@index([academicClassId])
+  @@index([enrollmentTermId])
 }
 
 model Lecturer {
@@ -194,15 +195,16 @@ model EducationalProgram {
 }
 
 model AcademicClass {
-  id                String  @id @default(cuid())
+  id                String    @id @default(cuid())
   name              String
   studyProgramId    String
   enrollmentYear    Int
-  capacity          Int     @default(30)
+  capacity          Int      @default(30)
   advisorLecturerId String?
 
   studyProgram    StudyProgram @relation(fields: [studyProgramId], references: [id])
   advisorLecturer Lecturer?    @relation(fields: [advisorLecturerId], references: [id])
+  students        Student[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -220,20 +222,15 @@ model AcademicTerm {
   isActive     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  students     Student[]
 
   @@unique([academicYear, termType])
-}
-
-enum StatusMhs {
-  tidak_aktif
-  belum_program
-  belum_daftar_ulang
-  sudah_program
 }
 
 enum JenisMhs {
   reguler
   reguler_transfer
+  reguler_khusus
 }
 
 enum Gender {
