@@ -6,6 +6,7 @@ import {
   UpdateAcademicClassSchema,
   AcademicClassParamSchema,
   BulkCreateAcademicClassSchema,
+  AcademicClassOptionsQuerySchema,
 } from "./schema";
 import { errorResponse, successResponse } from "@/libs/response";
 import { createBaseApp, createProtectedApp } from "@/libs/base";
@@ -57,6 +58,39 @@ const protectedAcademicClass = createProtectedApp()
       beforeHandle: hasPermission(FEATURE_NAME, "read"),
       response: {
         200: AcademicClassModel.academicClasses,
+        500: AcademicClassModel.error,
+      },
+    },
+  )
+  .get(
+    "/options",
+    async ({ query, set, log, locale }) => {
+      const { page = 1, limit = 10, search, studyProgramId } = query;
+
+      const { classes, pagination } = await AcademicClassService.getOptions(
+        {
+          page,
+          limit,
+          search,
+          studyProgramId,
+        },
+        log,
+      );
+
+      return successResponse(
+        set,
+        classes,
+        { key: "academicClass.optionsSuccess" },
+        200,
+        { pagination },
+        locale,
+      );
+    },
+    {
+      query: AcademicClassOptionsQuerySchema,
+      beforeHandle: hasPermission(FEATURE_NAME, "read"),
+      response: {
+        200: AcademicClassModel.getOptions,
         500: AcademicClassModel.error,
       },
     },

@@ -30,6 +30,11 @@ export const AcademicClassWithRelations = AcademicClassSafe.extend({
     .nullable(),
 });
 
+export const AcademicClassOption = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
 export const AcademicClassModel = {
   academicClass: createResponseSchema(AcademicClassWithRelations),
   academicClasses: createPaginatedResponseSchema(
@@ -43,6 +48,7 @@ export const AcademicClassModel = {
       count: z.number(),
     }),
   ),
+  getOptions: createPaginatedResponseSchema(z.array(AcademicClassOption)),
 
   error: createErrorSchema(z.null()),
   validationError: createErrorSchema(

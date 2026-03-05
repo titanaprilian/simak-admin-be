@@ -397,4 +397,66 @@ export abstract class AcademicClassService {
 
     return { count: created.count };
   }
+
+  static async getOptions(
+    params: {
+      page: number;
+      limit: number;
+      search?: string;
+      studyProgramId?: string;
+    },
+    log: Logger,
+  ) {
+    log.debug(
+      {
+        page: params.page,
+        limit: params.limit,
+        search: params.search,
+        studyProgramId: params.studyProgramId,
+      },
+      "Fetching academic class options",
+    );
+
+    const { page, limit, search, studyProgramId } = params;
+    const where: Prisma.AcademicClassWhereInput = {};
+
+    if (studyProgramId) {
+      where.studyProgramId = studyProgramId;
+    }
+
+    if (search) {
+      where.name = { contains: search, mode: "insensitive" };
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [classes, total] = await prisma.$transaction([
+      prisma.academicClass.findMany({
+        where,
+        select: { id: true, name: true },
+        skip,
+        take: limit,
+        orderBy: { name: "asc" },
+      }),
+      prisma.academicClass.count({ where }),
+    ]);
+
+    log.info(
+      { count: classes.length, total },
+      "Academic class options retrieved successfully",
+    );
+
+    return {
+      classes: classes.map((c) => ({
+        id: c.id,
+        name: c.name,
+      })),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 }

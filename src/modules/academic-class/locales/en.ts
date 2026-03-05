@@ -6,6 +6,7 @@ export const en = {
   getSuccess: "Academic class details retrieved",
   getByIdSuccess: "Academic class retrieved successfully",
   bulkCreateSuccess: "Academic classes created successfully",
+  optionsSuccess: "Academic class options retrieved successfully",
   notFound: "Academic class not found",
   duplicate:
     "Academic class with this name already exists for the given study program and year",

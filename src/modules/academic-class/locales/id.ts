@@ -6,6 +6,7 @@ export const id = {
   getSuccess: "Detail kelas akademik berhasil diambil",
   getByIdSuccess: "Kelas akademik berhasil diambil",
   bulkCreateSuccess: "Kelas akademik berhasil dibuat",
+  optionsSuccess: "Opsi kelas akademik berhasil diambil",
   notFound: "Kelas akademik tidak ditemukan",
   duplicate:
     "Kelas akademik dengan nama ini sudah ada untuk program studi dan tahun yang diberikan",

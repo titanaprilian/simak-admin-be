@@ -46,6 +46,11 @@ export const BulkCreateAcademicClassSchema = z.object({
   ),
 });
 
+export const AcademicClassOptionsQuerySchema = PaginationSchema.extend({
+  search: z.string().optional(),
+  studyProgramId: z.string().optional(),
+});
+
 export type CreateAcademicClassInput = z.infer<
   typeof CreateAcademicClassSchema
 >;

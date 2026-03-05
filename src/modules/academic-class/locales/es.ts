@@ -6,6 +6,7 @@ export const es = {
   getSuccess: "Detalles de clase académica recuperados",
   getByIdSuccess: "Clase académica recuperada exitosamente",
   bulkCreateSuccess: "Clases académicas creadas exitosamente",
+  optionsSuccess: "Opciones de clase académica recuperadas exitosamente",
   notFound: "Clase académica no encontrada",
   duplicate:
     "Ya existe una clase académica con este nombre para el programa de estudios y año dados",
