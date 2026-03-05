@@ -404,6 +404,7 @@ export abstract class AcademicClassService {
       limit: number;
       search?: string;
       studyProgramId?: string;
+      enrollmentYear?: number;
     },
     log: Logger,
   ) {
@@ -413,15 +414,20 @@ export abstract class AcademicClassService {
         limit: params.limit,
         search: params.search,
         studyProgramId: params.studyProgramId,
+        enrollmentYear: params.enrollmentYear,
       },
       "Fetching academic class options",
     );
 
-    const { page, limit, search, studyProgramId } = params;
+    const { page, limit, search, studyProgramId, enrollmentYear } = params;
     const where: Prisma.AcademicClassWhereInput = {};
 
     if (studyProgramId) {
       where.studyProgramId = studyProgramId;
+    }
+
+    if (enrollmentYear) {
+      where.enrollmentYear = enrollmentYear;
     }
 
     if (search) {

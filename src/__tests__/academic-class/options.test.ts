@@ -145,6 +145,29 @@ describe("GET /academic-classes/options - Get Academic Class Options", () => {
     expect(body.data).toHaveLength(3);
   });
 
+  it("should filter options by enrollmentYear", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "academic_class_management", action: "read" },
+    ]);
+    await seedAcademicClasses();
+
+    const res = await app.handle(
+      new Request(
+        "http://localhost/academic-classes/options?enrollmentYear=2023",
+        {
+          method: "GET",
+          headers: authHeaders,
+        },
+      ),
+    );
+
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.data).toHaveLength(2);
+    expect(body.data.every((c: any) => c.name.includes("2023"))).toBe(true);
+  });
+
   it("should respect pagination parameters", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [

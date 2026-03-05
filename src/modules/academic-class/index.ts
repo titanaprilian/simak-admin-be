@@ -65,7 +65,13 @@ const protectedAcademicClass = createProtectedApp()
   .get(
     "/options",
     async ({ query, set, log, locale }) => {
-      const { page = 1, limit = 10, search, studyProgramId } = query;
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        studyProgramId,
+        enrollmentYear,
+      } = query;
 
       const { classes, pagination } = await AcademicClassService.getOptions(
         {
@@ -73,6 +79,7 @@ const protectedAcademicClass = createProtectedApp()
           limit,
           search,
           studyProgramId,
+          enrollmentYear,
         },
         log,
       );
