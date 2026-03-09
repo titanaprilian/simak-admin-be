@@ -95,7 +95,7 @@ describe("PATCH /user-students/:id", () => {
     expect(res.status).toBe(404);
   });
 
-  it("should update student successfully", async () => {
+  it("should update student name successfully", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "student_management", action: "update" },
@@ -148,6 +148,142 @@ describe("PATCH /user-students/:id", () => {
 
     expect(res.status).toBe(200);
     expect(body.data.isActive).toBe(false);
+  });
+
+  it("should update loginId using suffix and existing program prefix", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "student_management", action: "update" },
+    ]);
+
+    const { student } = await createStudentTestFixtures(1);
+
+    const res = await app.handle(
+      new Request(`http://localhost/user-students/${student.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          loginId: "0099", // constructs to "24FKTI0099"
+        }),
+      }),
+    );
+
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.nim).toBe("24FKTI0099");
+  });
+
+  it("should update loginId using suffix and new studyProgram prefix", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "student_management", action: "update" },
+    ]);
+
+    const { student, educationalProgram } = await createStudentTestFixtures(1);
+
+    // Create a new study program under a different faculty
+    const newFaculty = await prisma.faculty.create({
+      data: { code: "EK", name: "Fakultas Ekonomi" },
+    });
+    const newProgram = await prisma.studyProgram.create({
+      data: {
+        facultyId: newFaculty.id,
+        educationalProgramId: educationalProgram.id,
+        code: "AK",
+        name: "Akuntansi",
+      },
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/user-students/${student.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          loginId: "0042", // suffix
+          studyProgramId: newProgram.id, // new program → prefix becomes "24EKAK"
+        }),
+      }),
+    );
+
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.nim).toBe("24EKAK0042"); // yearPrefix=24, facultyCode=EK, programCode=AK
+    expect(body.data.studyProgram.name).toBe("Akuntansi");
+  });
+
+  it("should return 409 when updated loginId conflicts with existing user", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "student_management", action: "update" },
+    ]);
+
+    const { student, program, academicTerm } =
+      await createStudentTestFixtures(1);
+
+    // Pre-seed a user that already owns the target constructed loginId
+    const conflictRole = await prisma.role.create({
+      data: { name: "ConflictRole" },
+    });
+    await prisma.user.create({
+      data: {
+        loginId: "24FKTI0099",
+        email: "conflict@test.com",
+        password: "hashed",
+        roleId: conflictRole.id,
+      },
+    });
+
+    const res = await app.handle(
+      new Request(`http://localhost/user-students/${student.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          loginId: "0099", // constructs to "24FKTI0099" — already taken
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(409);
+  });
+
+  it("should not return 409 when loginId suffix resolves to the same current loginId", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "student_management", action: "update" },
+    ]);
+
+    const { student } = await createStudentTestFixtures(1);
+    // Fixture seeds loginId as "24FKTI0000" for index 0
+    const res = await app.handle(
+      new Request(`http://localhost/user-students/${student.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          loginId: "0000", // constructs to "24FKTI0000" — same as current, should not conflict
+          name: "Updated Name",
+        }),
+      }),
+    );
+
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data.nim).toBe("24FKTI0000");
+    expect(body.data.name).toBe("Updated Name");
   });
 
   it("should return Spanish message when Accept-Language is es", async () => {
@@ -249,7 +385,7 @@ async function createStudentTestFixtures(count: number) {
   for (let i = 0; i < count; i++) {
     const user = await prisma.user.create({
       data: {
-        loginId: `mahasiswa${i}`,
+        loginId: `24FKTI000${i}`, // constructed format: yearPrefix=24, facultyCode=FK, programCode=TI
         email: `mahasiswa${i}@test.com`,
         password: "hashed",
         roleId: role.id,
@@ -277,5 +413,6 @@ async function createStudentTestFixtures(count: number) {
     faculty,
     academicClass,
     academicTerm,
+    educationalProgram,
   };
 }

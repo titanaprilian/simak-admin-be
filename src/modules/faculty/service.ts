@@ -48,7 +48,7 @@ export const FacultyService = {
       "Fetching faculties list",
     );
 
-    const { page, limit, search, sortBy, sortOrder } = params;
+    const { page, limit, search, sortBy = "code", sortOrder = "asc" } = params;
     const where = search
       ? {
           OR: [
@@ -246,7 +246,7 @@ export const FacultyService = {
         select: { id: true, name: true, code: true },
         skip,
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy: { code: "asc" },
       }),
       prisma.faculty.count({ where }),
     ]);

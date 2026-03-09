@@ -48,6 +48,7 @@ const protectedStudent = createProtectedApp()
     "/:id",
     async ({ params, set, log, locale }) => {
       const student = await StudentService.getUserStudentById(params.id, log);
+
       return successResponse(
         set,
         student,

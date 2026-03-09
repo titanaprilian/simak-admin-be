@@ -26,7 +26,7 @@ describe("POST /user-students", () => {
           "x-forwarded-for": randomIp(),
         },
         body: JSON.stringify({
-          loginId: "teststudent",
+          loginId: "0001",
           email: "teststudent@test.com",
           password: "password123",
           roleId: "role-id",
@@ -54,7 +54,7 @@ describe("POST /user-students", () => {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          loginId: "teststudent",
+          loginId: "0001",
           email: "teststudent@test.com",
           password: "password123",
           roleId: "role-id",
@@ -72,7 +72,7 @@ describe("POST /user-students", () => {
   });
 
   it("should return 400 if required field is missing", async () => {
-    const { authHeaders, user } = await createAuthenticatedUser();
+    const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "student_management", action: "create" },
     ]);
@@ -85,13 +85,13 @@ describe("POST /user-students", () => {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          loginId: "teststudent",
+          loginId: "0001",
           email: "teststudent@test.com",
           password: "password123",
-          roleId: "role-id",
           name: "Test Student",
           gender: "male",
           birthYear: 2004,
+          // missing studyProgramId, academicClassId, enrollmentTermId
         }),
       }),
     );
@@ -106,7 +106,20 @@ describe("POST /user-students", () => {
     ]);
 
     const { program, academicClass, academicTerm } =
-      await createStudentTestFixtures(1);
+      await createStudentTestFixtures(0);
+
+    // Pre-seed a user with the full constructed loginId: "24" + "FK" + "TI" + "0001"
+    const existingRole = await prisma.role.create({
+      data: { name: "ExistingRole" },
+    });
+    await prisma.user.create({
+      data: {
+        loginId: "24FKTI0001",
+        email: "existing@test.com",
+        password: "hashed",
+        roleId: existingRole.id,
+      },
+    });
 
     const res = await app.handle(
       new Request("http://localhost/user-students", {
@@ -116,10 +129,9 @@ describe("POST /user-students", () => {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          loginId: "mahasiswa0",
+          loginId: "0001", // suffix only — constructs to "24FKTI0001"
           email: "newstudent@test.com",
           password: "password123",
-          roleId: "role-id",
           name: "New Student",
           gender: "male",
           birthYear: 2004,
@@ -133,7 +145,7 @@ describe("POST /user-students", () => {
     expect(res.status).toBe(409);
   });
 
-  it("should create a new student successfully", async () => {
+  it("should create a new student successfully with provided loginId suffix", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     const role = await createTestRoleWithPermissions("TestUser", [
       { featureName: "student_management", action: "create" },
@@ -150,7 +162,7 @@ describe("POST /user-students", () => {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          loginId: "newstudent",
+          loginId: "0001", // suffix only — constructs to "24FKTI0001"
           email: "newstudent@test.com",
           password: "password123",
           roleId: role.id,
@@ -172,7 +184,7 @@ describe("POST /user-students", () => {
 
     expect(res.status).toBe(201);
     expect(body.data).toHaveProperty("id");
-    expect(body.data.nim).toBe("newstudent");
+    expect(body.data.nim).toBe("24FKTI0001"); // yearPrefix=24, facultyCode=FK, programCode=TI, suffix=0001
     expect(body.data.email).toBe("newstudent@test.com");
     expect(body.data.name).toBe("New Student");
     expect(body.data.gender).toBe("male");
@@ -189,7 +201,7 @@ describe("POST /user-students", () => {
     expect(body.data.enrollmentTerm.academicYear).toBe("2024/2025");
   });
 
-  it("should create student without roleId and auto-assign Mahasiswa role", async () => {
+  it("should create student without loginId and auto-assign Mahasiswa role", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "student_management", action: "create" },
@@ -198,7 +210,7 @@ describe("POST /user-students", () => {
     const { program, academicClass, academicTerm } =
       await createStudentTestFixtures(0);
 
-    const mahasiswaRole = await prisma.role.create({
+    await prisma.role.create({
       data: { name: "Mahasiswa" },
     });
 
@@ -230,7 +242,7 @@ describe("POST /user-students", () => {
     expect(body.data.nim).toMatch(/^24FKTI[0-9]{4}$/);
   });
 
-  it("should use provided loginId when specified", async () => {
+  it("should return 409 when constructed loginId already exists", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "student_management", action: "create" },
@@ -239,55 +251,16 @@ describe("POST /user-students", () => {
     const { program, academicClass, academicTerm } =
       await createStudentTestFixtures(0);
 
-    await prisma.role.create({
-      data: { name: "Mahasiswa" },
-    });
-
-    const res = await app.handle(
-      new Request("http://localhost/user-students", {
-        method: "POST",
-        headers: {
-          ...authHeaders,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          loginId: "25FKTI0001",
-          email: "customstudent@test.com",
-          password: "password123",
-          name: "Custom Student",
-          gender: "male",
-          birthYear: 2004,
-          studyProgramId: program.id,
-          academicClassId: academicClass.id,
-          enrollmentTermId: academicTerm.id,
-        }),
-      }),
-    );
-
-    const body = await res.json();
-
-    expect(res.status).toBe(201);
-    expect(body.data.nim).toBe("25FKTI0001");
-  });
-
-  it("should return 409 when loginId already exists", async () => {
-    const { authHeaders } = await createAuthenticatedUser();
-    await createTestRoleWithPermissions("TestUser", [
-      { featureName: "student_management", action: "create" },
-    ]);
-
-    const { program, academicClass, academicTerm, faculty } =
-      await createStudentTestFixtures(0);
-
     const existingRole = await prisma.role.create({
       data: { name: "ExistingRole" },
     });
 
+    // Pre-seed the full constructed loginId
     await prisma.user.create({
       data: {
-        loginId: "25FKTI0001",
+        loginId: "24FKTI0001",
         email: "existing@test.com",
-        password: "password123",
+        password: "hashed",
         roleId: existingRole.id,
       },
     });
@@ -300,7 +273,7 @@ describe("POST /user-students", () => {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          loginId: "25FKTI0001",
+          loginId: "0001", // constructs to "24FKTI0001" — already taken
           email: "newstudent@test.com",
           password: "password123",
           name: "New Student",
@@ -334,7 +307,7 @@ describe("POST /user-students", () => {
           "accept-language": "es",
         },
         body: JSON.stringify({
-          loginId: "newstudent",
+          loginId: "0001",
           email: "newstudent@test.com",
           password: "password123",
           roleId: role.id,
@@ -399,7 +372,7 @@ async function createStudentTestFixtures(count: number) {
   for (let i = 0; i < count; i++) {
     const user = await prisma.user.create({
       data: {
-        loginId: `mahasiswa${i}`,
+        loginId: `24FKTI000${i}`,
         email: `mahasiswa${i}@test.com`,
         password: "hashed",
         roleId: role.id,

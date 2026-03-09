@@ -6,5 +6,5 @@ export const id = {
   deleteSuccess: "Program studi berhasil dihapus",
   optionsSuccess: "Opsi program studi berhasil diambil",
   notFound: "Program studi tidak ditemukan",
-  codeExists: "Kode sudah ada untuk fakultas ini",
+  codeExists: "Kode sudah ada untuk kombinasi program studi dan fakultas ini",
 };

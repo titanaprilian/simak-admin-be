@@ -10,6 +10,11 @@ const StudyProgramData = z.object({
   name: z.string(),
 });
 
+const FacultyData = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
 const AcademicClassData = z.object({
   id: z.string(),
   name: z.string(),
@@ -35,6 +40,8 @@ export const StudentData = z.object({
   phoneNumber: z.string().nullable(),
   studyProgram: StudyProgramData,
   academicClass: AcademicClassData,
+  faculty: FacultyData,
+  semester: z.number(),
   enrollmentTerm: EnrollmentTermData,
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

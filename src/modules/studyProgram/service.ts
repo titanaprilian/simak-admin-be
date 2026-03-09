@@ -27,7 +27,14 @@ export const StudyProgramService = {
       "Fetching study programs list",
     );
 
-    const { page, limit, search, facultyId, sortBy, sortOrder } = params;
+    const {
+      page,
+      limit,
+      search,
+      facultyId,
+      sortBy = "code",
+      sortOrder = "asc",
+    } = params;
     const where: Prisma.StudyProgramWhereInput = {};
 
     if (search) {
@@ -42,12 +49,14 @@ export const StudyProgramService = {
     }
 
     const skip = (page - 1) * limit;
-    const orderBy: Prisma.StudyProgramOrderByWithRelationInput =
-      sortBy === "code"
-        ? { code: sortOrder }
-        : sortBy === "createdAt"
-          ? { createdAt: sortOrder }
-          : { name: sortOrder };
+    const orderBy:
+      | Prisma.StudyProgramOrderByWithRelationInput
+      | Prisma.StudyProgramOrderByWithRelationInput[] =
+      sortBy === "createdAt"
+        ? { createdAt: sortOrder }
+        : sortBy === "name"
+          ? { name: sortOrder }
+          : [{ faculty: { code: sortOrder } }, { code: sortOrder }];
 
     const [programs, total] = await prisma.$transaction([
       prisma.studyProgram.findMany({
@@ -373,7 +382,7 @@ export const StudyProgramService = {
         select: { id: true, name: true, code: true, facultyId: true },
         skip,
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy: [{ faculty: { code: "asc" } }, { code: "asc" }],
       }),
       prisma.studyProgram.count({ where }),
     ]);

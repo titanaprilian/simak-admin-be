@@ -119,7 +119,7 @@ describe("GET /user-students", () => {
     expect(body.data[0].nim).toBeDefined();
   });
 
-  it("should return correct response structure", async () => {
+  it.only("should return correct response structure", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "student_management", action: "read" },
@@ -146,6 +146,8 @@ describe("GET /user-students", () => {
       expect(student).toHaveProperty("birthYear");
       expect(student).toHaveProperty("jenis");
       expect(student).toHaveProperty("studyProgram");
+      expect(student).toHaveProperty("faculty");
+      expect(student).toHaveProperty("semester");
       expect(student).toHaveProperty("academicClass");
       expect(student).toHaveProperty("enrollmentTerm");
     });

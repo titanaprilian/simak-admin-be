@@ -23,13 +23,22 @@ export const StudentService = {
         limit: params.limit,
         search: params.search,
         studyProgramId: params.studyProgramId,
+        facultyId: params.facultyId,
       },
       "Fetching students list",
     );
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      studyProgramId,
+      facultyId,
+      semester,
+      isActive,
+    } = params;
+    const semesterNumber = semester ? parseInt(semester, 10) : undefined;
 
-    const { page = 1, limit = 10, search, studyProgramId } = params;
     const where: Record<string, unknown> = {};
-
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
@@ -37,13 +46,28 @@ export const StudentService = {
         { user: { email: { contains: search, mode: "insensitive" } } },
       ];
     }
-
     if (studyProgramId) {
       where.studyProgramId = studyProgramId;
     }
+    if (facultyId) {
+      where.studyProgram = { facultyId };
+    }
+
+    if (isActive !== undefined) {
+      where.user = { isActive: isActive === "true" };
+    }
+
+    const activeTerm = await prisma.academicTerm.findFirst({
+      where: { isActive: true },
+      select: { termOrder: true },
+    });
+
+    if (semesterNumber && activeTerm) {
+      const targetTermOrder = activeTerm.termOrder - semesterNumber + 1;
+      where.enrollmentTerm = { termOrder: targetTermOrder };
+    }
 
     const skip = (page - 1) * limit;
-
     const [students, total] = await prisma.$transaction([
       prisma.student.findMany({
         where,
@@ -63,6 +87,12 @@ export const StudentService = {
             select: {
               id: true,
               name: true,
+              faculty: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
           academicClass: {
@@ -75,6 +105,7 @@ export const StudentService = {
             select: {
               id: true,
               academicYear: true,
+              termOrder: true,
               termType: true,
             },
           },
@@ -100,7 +131,14 @@ export const StudentService = {
       jenis: student.jenis,
       cityBirth: student.cityBirth,
       phoneNumber: student.phoneNumber,
-      studyProgram: student.studyProgram,
+      semester: activeTerm
+        ? activeTerm.termOrder - student.enrollmentTerm.termOrder + 1
+        : 0,
+      faculty: student.studyProgram.faculty,
+      studyProgram: {
+        id: student.studyProgram.id,
+        name: student.studyProgram.name,
+      },
       academicClass: student.academicClass,
       enrollmentTerm: student.enrollmentTerm,
       createdAt: student.createdAt.toISOString(),
@@ -120,46 +158,63 @@ export const StudentService = {
 
   getUserStudentById: async (id: string, log: Logger) => {
     log.debug({ userStudentId: id }, "Fetching user student details");
-
     try {
-      const student = await prisma.student.findUniqueOrThrow({
-        where: { id },
-        include: {
-          user: {
-            select: {
-              id: true,
-              loginId: true,
-              email: true,
-              isActive: true,
+      const [student, activeTerm] = await Promise.all([
+        prisma.student.findUniqueOrThrow({
+          where: { id },
+          include: {
+            user: {
+              select: {
+                id: true,
+                loginId: true,
+                email: true,
+                isActive: true,
+              },
+            },
+            studyProgram: {
+              select: {
+                id: true,
+                name: true,
+                faculty: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            academicClass: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            enrollmentTerm: {
+              select: {
+                id: true,
+                academicYear: true,
+                termOrder: true,
+                termType: true,
+              },
             },
           },
-          studyProgram: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          academicClass: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          enrollmentTerm: {
-            select: {
-              id: true,
-              academicYear: true,
-              termType: true,
-            },
-          },
-        },
-      });
+        }),
+        prisma.academicTerm.findFirst({
+          where: { isActive: true },
+          select: { termOrder: true },
+        }),
+      ]);
+
+      const semester = activeTerm
+        ? activeTerm.termOrder - student.enrollmentTerm.termOrder + 1
+        : 0;
 
       log.info(
         {
           userStudentId: id,
           nim: student.user.loginId,
           name: student.name,
+          semester,
         },
         "User student retrieved successfully",
       );
@@ -176,7 +231,12 @@ export const StudentService = {
         jenis: student.jenis,
         cityBirth: student.cityBirth,
         phoneNumber: student.phoneNumber,
-        studyProgram: student.studyProgram,
+        semester,
+        faculty: student.studyProgram.faculty,
+        studyProgram: {
+          id: student.studyProgram.id,
+          name: student.studyProgram.name,
+        },
         academicClass: student.academicClass,
         enrollmentTerm: student.enrollmentTerm,
         createdAt: student.createdAt.toISOString(),
@@ -194,13 +254,17 @@ export const StudentService = {
     );
 
     try {
-      let loginId = data.loginId;
+      let loginId: string;
 
-      if (loginId) {
+      if (data.loginId) {
+        const { yearPrefix, facultyCode, programCode } =
+          await buildLoginIdPrefix(data.studyProgramId, data.enrollmentTermId);
+
+        loginId = `${yearPrefix}${facultyCode}${programCode}${data.loginId}`;
+
         const existingUser = await prisma.user.findUnique({
           where: { loginId },
         });
-
         if (existingUser) {
           log.warn({ loginId }, "Login ID already exists");
           throw new LoginIdExistsError(loginId);
@@ -405,6 +469,31 @@ export const StudentService = {
       if (data.email !== undefined) userUpdateData.email = data.email;
       if (data.isActive !== undefined) userUpdateData.isActive = data.isActive;
 
+      if (data.loginId !== undefined) {
+        const { yearPrefix, facultyCode, programCode } =
+          await buildLoginIdPrefix(
+            data.studyProgramId ?? existingStudent.studyProgramId,
+            data.enrollmentTermId ?? existingStudent.enrollmentTermId,
+          );
+
+        const constructedLoginId = `${yearPrefix}${facultyCode}${programCode}${data.loginId}`;
+
+        if (constructedLoginId !== existingStudent.user.loginId) {
+          const conflict = await prisma.user.findUnique({
+            where: { loginId: constructedLoginId },
+          });
+          if (conflict) {
+            log.warn(
+              { loginId: constructedLoginId },
+              "Login ID already exists",
+            );
+            throw new LoginIdExistsError(constructedLoginId);
+          }
+        }
+
+        userUpdateData.loginId = constructedLoginId;
+      }
+
       const updated = await prisma.$transaction(async (tx) => {
         if (Object.keys(userUpdateData).length > 0) {
           await tx.user.update({
@@ -514,6 +603,33 @@ export const StudentService = {
     }
   },
 };
+
+async function buildLoginIdPrefix(
+  studyProgramId: string,
+  enrollmentTermId: string,
+): Promise<{ yearPrefix: string; facultyCode: string; programCode: string }> {
+  const studyProgram = await prisma.studyProgram.findUnique({
+    where: { id: studyProgramId },
+    include: { faculty: true },
+  });
+  if (!studyProgram) {
+    throw new Error("Study program not found");
+  }
+
+  const academicTerm = await prisma.academicTerm.findUnique({
+    where: { id: enrollmentTermId },
+  });
+  if (!academicTerm) {
+    throw new Error("Academic term not found");
+  }
+
+  const firstYear = academicTerm.academicYear.split("/")[0];
+  const yearPrefix = firstYear.slice(-2);
+  const facultyCode = studyProgram.faculty.code;
+  const programCode = studyProgram.code;
+
+  return { yearPrefix, facultyCode, programCode };
+}
 
 async function generateLoginId(
   studyProgramId: string,

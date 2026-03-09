@@ -23,6 +23,7 @@ export type CreateUserStudentInput = z.infer<typeof CreateUserStudentSchema>;
 export const UpdateUserStudentSchema = z
   .object({
     email: z.string().email("Invalid email format").optional(),
+    loginId: z.string().min(1, "Login ID is required").max(50).optional(),
     name: z.string().min(1, "Name is required").max(255).optional(),
     gender: z.enum(["male", "female"]).optional(),
     birthYear: z.number().int().min(1900).max(2100).optional(),
@@ -57,6 +58,9 @@ export const StudentParamSchema = z.object({
 export const StudentQuerySchema = PaginationSchema.extend({
   search: z.string().optional(),
   studyProgramId: z.string().optional(),
+  facultyId: z.string().optional(),
+  semester: z.string().optional(),
+  isActive: z.string().optional(),
 });
 
 export type StudentQuery = z.infer<typeof StudentQuerySchema>;
