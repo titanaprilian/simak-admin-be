@@ -12,6 +12,7 @@ import {
   StudentNotFoundError,
   DeleteSelfStudentError,
   MahasiswaRoleNotFoundError,
+  EnrollmentYearNotFoundError,
 } from "./error";
 import { handlePrismaError } from "@/libs/exceptions";
 
@@ -313,6 +314,80 @@ export const StudentService = {
         log.debug({ roleId: mahasiswaRole.id }, "Auto-assigned Mahasiswa role");
       }
 
+      let academicClassId = data.academicClassId;
+
+      if (!academicClassId) {
+        const enrollmentTerm = await prisma.academicTerm.findUnique({
+          where: { id: data.enrollmentTermId },
+          select: { academicYear: true },
+        });
+
+        if (!enrollmentTerm) {
+          throw new EnrollmentYearNotFoundError("Enrollment term not found");
+        }
+
+        const enrollmentYear = parseInt(
+          enrollmentTerm.academicYear.substring(0, 4),
+          10,
+        );
+
+        // Find a class with available capacity
+        const availableClass = await prisma.academicClass.findFirst({
+          where: {
+            studyProgramId: data.studyProgramId,
+            enrollmentYear,
+            students: {
+              none: undefined, // we'll check capacity manually below
+            },
+          },
+          include: {
+            _count: { select: { students: true } },
+          },
+          orderBy: { name: "asc" },
+        });
+
+        if (
+          availableClass &&
+          availableClass._count.students < availableClass.capacity
+        ) {
+          // Use existing class that still has room
+          academicClassId = availableClass.id;
+          log.debug({ academicClassId }, "Auto-assigned to existing class");
+        } else {
+          // All classes full or none exist — create a new one
+          const existingClassCount = await prisma.academicClass.count({
+            where: { studyProgramId: data.studyProgramId, enrollmentYear },
+          });
+
+          // Fetch the study program with faculty info for the class name
+          const studyProgram = await prisma.studyProgram.findUniqueOrThrow({
+            where: { id: data.studyProgramId },
+            select: {
+              code: true,
+              faculty: { select: { code: true } },
+            },
+          });
+
+          // Name classes as A, B, C, ... based on count
+          const newClassName = `${studyProgram.faculty.code}${studyProgram.code}-${enrollmentYear}-${String.fromCharCode(65 + existingClassCount)}`;
+
+          const newClass = await prisma.academicClass.create({
+            data: {
+              name: newClassName,
+              studyProgramId: data.studyProgramId,
+              enrollmentYear,
+              capacity: 30,
+            },
+          });
+
+          academicClassId = newClass.id;
+          log.debug(
+            { academicClassId, className: newClassName },
+            "Auto-created and assigned new class",
+          );
+        }
+      }
+
       const created = await prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
           data: {
@@ -334,7 +409,7 @@ export const StudentService = {
             cityBirth: data.cityBirth,
             phoneNumber: data.phoneNumber,
             studyProgramId: data.studyProgramId,
-            academicClassId: data.academicClassId,
+            academicClassId: academicClassId,
             enrollmentTermId: data.enrollmentTermId,
           },
           include: {

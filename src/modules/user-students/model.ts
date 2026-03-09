@@ -40,17 +40,27 @@ export const StudentData = z.object({
   phoneNumber: z.string().nullable(),
   studyProgram: StudyProgramData,
   academicClass: AcademicClassData,
-  faculty: FacultyData,
-  semester: z.number(),
   enrollmentTerm: EnrollmentTermData,
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
 
 export const StudentModel = {
-  list: createPaginatedResponseSchema(z.array(StudentData)),
+  list: createPaginatedResponseSchema(
+    z.array(
+      StudentData.extend({
+        faculty: FacultyData,
+        semester: z.number(),
+      }),
+    ),
+  ),
   create: createResponseSchema(StudentData),
-  get: createResponseSchema(StudentData),
+  get: createResponseSchema(
+    StudentData.extend({
+      faculty: FacultyData,
+      semester: z.number(),
+    }),
+  ),
   update: createResponseSchema(StudentData),
   delete: createResponseSchema(z.null()),
   error: createErrorSchema(z.null()),

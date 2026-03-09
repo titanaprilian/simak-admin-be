@@ -177,15 +177,15 @@ describe("PATCH /user-students/:id", () => {
     expect(body.data.nim).toBe("24FKTI0099");
   });
 
-  it("should update loginId using suffix and new studyProgram prefix", async () => {
+  it("should not update studyProgramId even if provided in the request body", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "student_management", action: "update" },
     ]);
 
-    const { student, educationalProgram } = await createStudentTestFixtures(1);
+    const { student, program, educationalProgram } =
+      await createStudentTestFixtures(1);
 
-    // Create a new study program under a different faculty
     const newFaculty = await prisma.faculty.create({
       data: { code: "EK", name: "Fakultas Ekonomi" },
     });
@@ -206,8 +206,8 @@ describe("PATCH /user-students/:id", () => {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          loginId: "0042", // suffix
-          studyProgramId: newProgram.id, // new program → prefix becomes "24EKAK"
+          name: "Updated Name",
+          studyProgramId: newProgram.id, // should be ignored
         }),
       }),
     );
@@ -215,8 +215,9 @@ describe("PATCH /user-students/:id", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.data.nim).toBe("24EKAK0042"); // yearPrefix=24, facultyCode=EK, programCode=AK
-    expect(body.data.studyProgram.name).toBe("Akuntansi");
+    expect(body.data.name).toBe("Updated Name"); // normal fields still update
+    expect(body.data.studyProgram.id).toBe(program.id); // still the original program
+    expect(body.data.studyProgram.name).not.toBe("Akuntansi"); // new program was NOT applied
   });
 
   it("should return 409 when updated loginId conflicts with existing user", async () => {

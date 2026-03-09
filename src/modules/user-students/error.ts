@@ -59,3 +59,13 @@ export class MahasiswaRoleNotFoundError extends Error {
     this.key = "userStudents.mahasiswaRoleNotFound";
   }
 }
+
+export class EnrollmentYearNotFoundError extends Error {
+  readonly key: string;
+
+  constructor(locale: string = "en") {
+    super("Enrollment year not found. Please contact administrator.");
+    this.name = "EnrollmentYearNotFoundError";
+    this.key = "userStudents.enrollmentYearNotFound";
+  }
+}

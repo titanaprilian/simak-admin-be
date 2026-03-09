@@ -196,7 +196,7 @@ describe("POST /user-students", () => {
     expect(body.data.studyProgram).toBeDefined();
     expect(body.data.studyProgram.name).toBe("Teknik Informatika");
     expect(body.data.academicClass).toBeDefined();
-    expect(body.data.academicClass.name).toBe("FKTI-2022-A");
+    expect(body.data.academicClass.name).toBe("FKTI-2024-A");
     expect(body.data.enrollmentTerm).toBeDefined();
     expect(body.data.enrollmentTerm.academicYear).toBe("2024/2025");
   });
@@ -326,6 +326,115 @@ describe("POST /user-students", () => {
     expect(res.status).toBe(201);
     expect(body.message).toBe("Estudiante creado exitosamente");
   });
+
+  it("should auto-assign existing class when academicClassId is not provided", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "student_management", action: "create" },
+    ]);
+
+    const { program, academicClass, academicTerm } =
+      await createStudentTestFixtures(0);
+
+    await prisma.role.create({ data: { name: "Mahasiswa" } });
+
+    const res = await app.handle(
+      new Request("http://localhost/user-students", {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "autostudent@test.com",
+          password: "password123",
+          name: "Auto Class Student",
+          gender: "male",
+          birthYear: 2004,
+          studyProgramId: program.id,
+          // no academicClassId provided
+          enrollmentTermId: academicTerm.id,
+        }),
+      }),
+    );
+
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(body.data.academicClass).toBeDefined();
+    expect(body.data.academicClass.id).toBe(academicClass.id); // should assign the existing class
+    expect(body.data.academicClass.name).toBe("FKTI-2024-A");
+  });
+
+  it("should auto-create and assign a new class when no class exists for the study program and enrollment year", async () => {
+    const { authHeaders } = await createAuthenticatedUser();
+    await createTestRoleWithPermissions("TestUser", [
+      { featureName: "student_management", action: "create" },
+    ]);
+
+    // Use fixtures but don't create any academicClass for the matching enrollmentYear
+    const educationalProgram = await prisma.educationalProgram.create({
+      data: { name: "Sarjana", level: "S1" },
+    });
+    const faculty = await prisma.faculty.create({
+      data: { code: "FT", name: "Fakultas Teknologi" },
+    });
+    const program = await prisma.studyProgram.create({
+      data: {
+        facultyId: faculty.id,
+        educationalProgramId: educationalProgram.id,
+        code: "SI",
+        name: "Sistem Informasi",
+      },
+    });
+    const academicTerm = await prisma.academicTerm.create({
+      data: {
+        academicYear: "2024/2025",
+        termType: "GENAP",
+        termOrder: 2,
+        startDate: new Date("2025-02-01"),
+        endDate: new Date("2025-06-30"),
+        isActive: false,
+      },
+    });
+    // No academicClass created for this program + enrollmentYear (2024)
+
+    await prisma.role.create({ data: { name: "Mahasiswa" } });
+
+    const res = await app.handle(
+      new Request("http://localhost/user-students", {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "newclassstudent@test.com",
+          password: "password123",
+          name: "New Class Student",
+          gender: "male",
+          birthYear: 2004,
+          studyProgramId: program.id,
+          // no academicClassId — should trigger auto-create
+          enrollmentTermId: academicTerm.id,
+        }),
+      }),
+    );
+
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(body.data.academicClass).toBeDefined();
+    expect(body.data.academicClass.name).toBe("FTSI-2024-A"); // {FT}{SI}-{2024}-{A}
+
+    // Verify the class was actually persisted in the DB
+    const createdClass = await prisma.academicClass.findFirst({
+      where: { studyProgramId: program.id, enrollmentYear: 2024 },
+    });
+    expect(createdClass).not.toBeNull();
+    expect(createdClass!.name).toBe("FTSI-2024-A");
+    expect(createdClass!.capacity).toBe(30);
+  });
 });
 
 async function createStudentTestFixtures(count: number) {
@@ -359,9 +468,9 @@ async function createStudentTestFixtures(count: number) {
 
   const academicClass = await prisma.academicClass.create({
     data: {
-      name: "FKTI-2022-A",
+      name: "FKTI-2024-A",
       studyProgramId: program.id,
-      enrollmentYear: 2022,
+      enrollmentYear: 2024,
       capacity: 30,
     },
   });

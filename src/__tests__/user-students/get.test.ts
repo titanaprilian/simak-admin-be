@@ -59,7 +59,7 @@ describe("GET /user-students/:id", () => {
     expect(res.status).toBe(404);
   });
 
-  it.only("should return student by id successfully", async () => {
+  it("should return student by id successfully", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "student_management", action: "read" },
@@ -75,7 +75,6 @@ describe("GET /user-students/:id", () => {
     );
 
     const body = await res.json();
-    console.log(body);
 
     expect(res.status).toBe(200);
     expect(body.data.id).toBe(student.id);

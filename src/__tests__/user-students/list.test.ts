@@ -119,7 +119,7 @@ describe("GET /user-students", () => {
     expect(body.data[0].nim).toBeDefined();
   });
 
-  it.only("should return correct response structure", async () => {
+  it("should return correct response structure", async () => {
     const { authHeaders } = await createAuthenticatedUser();
     await createTestRoleWithPermissions("TestUser", [
       { featureName: "student_management", action: "read" },

@@ -14,7 +14,10 @@ export const CreateUserStudentSchema = z.object({
   cityBirth: z.string().max(100).optional(),
   phoneNumber: z.string().max(20).optional(),
   studyProgramId: z.string().min(1, "Study program ID is required"),
-  academicClassId: z.string().min(1, "Academic class ID is required"),
+  academicClassId: z
+    .string()
+    .min(1, "Academic class ID is required")
+    .optional(),
   enrollmentTermId: z.string().min(1, "Enrollment term ID is required"),
 });
 
@@ -31,18 +34,12 @@ export const UpdateUserStudentSchema = z
     jenis: z.enum(["reguler", "reguler_transfer", "reguler_khusus"]).optional(),
     cityBirth: z.string().max(100).optional(),
     phoneNumber: z.string().max(20).optional(),
-    studyProgramId: z
-      .string()
-      .min(1, "Study program ID is required")
-      .optional(),
     academicClassId: z
       .string()
       .min(1, "Academic class ID is required")
       .optional(),
-    enrollmentTermId: z
-      .string()
-      .min(1, "Enrollment term ID is required")
-      .optional(),
+    // Note: studyProgramId and enrollmentTermId are intentionally not updatable.
+    // Program transfers must go through the dedicated transfer endpoint.
     isActive: z.boolean().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
